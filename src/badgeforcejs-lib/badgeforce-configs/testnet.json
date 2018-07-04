@@ -1,0 +1,13 @@
+{
+    "testnet": {
+        "base": "https://testnet.badgeforce.io/alpha",
+        "routes": {
+            "state": "/state", 
+            "ipfs": "/ipfs", 
+            "batches": {
+                "submit": "/batches",
+                "statuses": "/batch_statuses"
+            }
+        }
+    }
+}
