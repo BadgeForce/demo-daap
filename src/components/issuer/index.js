@@ -1,10 +1,10 @@
 import React, { Component } from 'react';
-import { Grid, Confirm, Input, Tab, Menu, Button } from 'semantic-ui-react'
+import { Grid, Confirm, Input, Tab, Menu, Button, Dimmer, Loader } from 'semantic-ui-react'
 import  { AccountManager } from '../../badgeforcejs-lib/account_manager';
 import { Issuer as Account } from '../../badgeforcejs-lib/issuer';
 import { toast, ToastContainer } from "react-toastify";
 import {observer, inject} from 'mobx-react';
-import { animateElem } from '../verifier';
+import { animateElem, sleep } from '../verifier';
 import { Toaster } from '../utils/toaster';
 import { RevokeForm, NewAccountForm, IssueForm } from './forms';
 import { Transactions } from './transactions';
@@ -37,6 +37,7 @@ class PasswordConfirm extends Component {
     }
 }
 @inject('accountStore')
+@inject('badgeStore')
 @observer
 export class Issuer extends Component {
     constructor(props) {
@@ -77,13 +78,22 @@ export class Issuer extends Component {
         this.accountManager = new AccountManager();
     }
     async componentWillMount() {
+        this.setState({loading: {toggle: true, message: 'Loading accounts from browser storage'}})
         const accountCache = await this.accountStore.getCache();
         accountCache.forEach(async account => {
-            await this.accountStore.newAccount(new Account(account, this.handleTransactionsUpdate.bind(this)));
+            await this.props.accountStore.newAccount(new Account(account, this.handleTransactionsUpdate.bind(this)));
         });
-    }
-    componentDidMount() {
-        if(this.accountStore.current === null) animateElem(this.accountsTabRef.current, 'flash', 5);
+        await sleep(1);
+        if(this.accountStore.current === null) {
+            animateElem(this.accountsTabRef.current, 'flash', 5);
+        } else {
+            console.log(this.props.badgeStore.cache);
+            this.setState({loading: {toggle: true, message: 'Loading Badges from Blockchain for account'}})
+            await this.props.badgeStore.setAccount(this.accountStore.current);
+            console.log(this.props.badgeStore.cache);
+        }
+        await sleep(1);
+        this.setState({loading: {toggle: false, message: ''}})
     }
     async createAccount(password, name) {
         try {
@@ -220,6 +230,9 @@ export class Issuer extends Component {
     render() {
         return (
             <Grid.Column>
+                <Dimmer active={this.state.loading.toggle}>
+                    <Loader indeterminate>{this.state.loading.message}</Loader>
+                </Dimmer>
                 <ToastContainer autoClose={5000} />
                 <PasswordConfirm loading={this.state.confirmPassword.loading} finish={async (password) => {
                         this.setState({confirmPassword: {loading: false}});
@@ -242,10 +255,13 @@ export class Issuer extends Component {
                     cancel={() => this.setState({confirmPassword: {show: false, account: null, loading: false}})
                 }
                 />
-                <Grid.Column>
-                    <Tab menu={{ fluid: true, vertical: false}} panes={this.panes} />
-                    <Transactions transactions={this.state.transactions}/>
-                </Grid.Column>
+                {!this.state.loading.toggle ? 
+                    <Grid.Column>
+                        <Tab menu={{ fluid: true, vertical: false}} panes={this.panes} />
+                        <Transactions transactions={this.state.transactions}/>
+                    </Grid.Column> : 
+                    null
+                }
             </Grid.Column>
         );
     }

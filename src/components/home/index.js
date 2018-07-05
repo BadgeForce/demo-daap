@@ -8,6 +8,7 @@ import {observer, inject} from 'mobx-react';
 import 'react-toastify/dist/ReactToastify.css';
 
 @inject('accountStore')
+@inject('badgeStore')
 @observer
 export class Home extends Component {  
     constructor(props) {
@@ -80,7 +81,10 @@ export class Home extends Component {
                             <Dropdown.Menu scrolling>
                                 {this.accountStore.accounts
                                 .map(account => {return {text: account.account.publicKey, value: account.account.publicKey, label: { color: 'red', empty: true, circular: true }}})
-                                .map(option => <Dropdown.Item onClick={(e, data) => this.accountStore.switchAccount(data.value)} key={option.value} {...option} />)}
+                                .map(option => <Dropdown.Item onClick={async (e, data) =>  {
+                                    this.props.accountStore.switchAccount(data.value);
+                                    await this.props.badgeStore.setAccount(this.props.accountStore.current);
+                                }} key={option.value} {...option} />)}
                             </Dropdown.Menu>
                             </Dropdown.Menu>
                         </Dropdown>
