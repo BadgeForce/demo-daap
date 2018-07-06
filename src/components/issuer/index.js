@@ -1,12 +1,12 @@
 import React, { Component } from 'react';
-import { Grid, Confirm, Input, Tab, Menu, Button, Dimmer, Loader } from 'semantic-ui-react'
+import { Grid, Confirm, Input, Tab, Menu, Button, Dimmer, Loader, Modal, Header, Icon } from 'semantic-ui-react'
 import  { AccountManager } from '../../badgeforcejs-lib/account_manager';
 import { Issuer as Account } from '../../badgeforcejs-lib/issuer';
 import { toast, ToastContainer } from "react-toastify";
 import {observer, inject} from 'mobx-react';
-import { animateElem, sleep } from '../verifier';
+import { sleep } from '../verifier';
 import { Toaster } from '../utils/toaster';
-import { RevokeForm, NewAccountForm, IssueForm } from './forms';
+import { RevokeForm, AccountOptions, IssueForm } from './forms';
 import { Transactions } from './transactions';
 import { isMobile } from './detect-browser';
 import 'animate.css/animate.min.css';
@@ -49,7 +49,12 @@ export class Issuer extends Component {
             confirmPassword: {show: false, account: null, loading: false},
             error: null,
             transactions: [],
-            toastId: null
+            toastId: null,
+            newAccountInfo: {
+                name: '',
+                privateKey: '',
+                show: false
+            }
         }
 
         
@@ -61,6 +66,8 @@ export class Issuer extends Component {
         this.importAccountDone = this.importAccountDone.bind(this);
         this.createAccount = this.createAccount.bind(this);
         this.downloadKeyPair = this.downloadKeyPair.bind(this);
+        this.showNewAccountInfo = this.showNewAccountInfo.bind(this);
+        this.newAccountModal = this.newAccountModal.bind(this);
 
         this.accountStore = this.props.accountStore;
         this.demoCred = {
@@ -72,36 +79,74 @@ export class Issuer extends Component {
         this.panes = [
             { menuItem: 'Issue', render: () => <Tab.Pane>{<IssueForm notify={Toaster.notify} warn={this.accountStore.current === null} handle={this.handleIssue} />}</Tab.Pane> },
             { menuItem: 'Revoke', render: () => <Tab.Pane>{<RevokeForm demoCred={this.demoCred} handle={this.handleRevoke} />}</Tab.Pane> },
-            { menuItem: <Menu.Item ref={this.accountsTabRef} as={Button} key='accounts'>Accounts</Menu.Item>, render: () => <Tab.Pane>{<NewAccountForm handleCreateAccount={this.createAccount} handleImportAccount={this.importAccount} />}</Tab.Pane> }
+            { menuItem: <Menu.Item ref={this.accountsTabRef} as={Button} key='accounts'>Accounts</Menu.Item>, 
+                render: () => {
+                    const handleCreateAccount = this.createAccount.bind(this)
+                    const handleImportAccount = this.importAccount.bind(this)
+                    const props = {handleCreateAccount, handleImportAccount};
+                    return <Tab.Pane>{<AccountOptions handleCreateAccount={async (password, name) => await this.createAccount(password, name)} />}</Tab.Pane>
+            }}
         ]
 
         this.accountManager = new AccountManager();
     }
     async componentWillMount() {
-        this.setState({loading: {toggle: true, message: 'Loading accounts from browser storage'}})
-        const accountCache = await this.accountStore.getCache();
-        accountCache.forEach(async account => {
-            await this.props.accountStore.newAccount(new Account(account, this.handleTransactionsUpdate.bind(this)));
-        });
-        await sleep(1);
         if(this.accountStore.current === null) {
-            animateElem(this.accountsTabRef.current, 'flash', 5);
-        } else {
-            console.log(this.props.badgeStore.cache);
-            this.setState({loading: {toggle: true, message: 'Loading Badges from Blockchain for account'}})
-            await this.props.badgeStore.setAccount(this.accountStore.current);
-            console.log(this.props.badgeStore.cache);
-        }
-        await sleep(1);
-        this.setState({loading: {toggle: false, message: ''}})
+            this.setState({loading: {toggle: true, message: 'Loading accounts from browser storage'}})
+            const accountCache = await this.accountStore.getCache();
+            await sleep(1);
+            if(accountCache.length === 0) {
+                Toaster.notify("No accounts found in storage, create one using accounts tab", toast.TYPE.WARNING);
+                this.setState({loading: {toggle: false, message: ''}})
+            } else {
+                accountCache.forEach(async account => {
+                    await this.props.accountStore.newAccount(new Account(account, this.handleTransactionsUpdate.bind(this)));
+                });
+                this.setState({loading: {toggle: false, message: ''}})
+            }
+        }        
     }
+
+    newAccountModal() {
+        return (
+            <Modal
+                open={this.state.newAccountInfo.show}
+                basic
+                size='small'>
+                <Header icon='key' content='Copy your privatekey somewhere safe, use it to import your account later' />
+                <Modal.Content>
+                    <h3>Name: {this.state.newAccountInfo.name}</h3>
+                    <h3>Privatekey: {this.state.newAccountInfo.privateKey}</h3>
+                </Modal.Content>
+                <Modal.Actions>
+                    <Button color='green' onClick={() => this.setState({newAccountInfo: {
+                        name: '',
+                        privateKey: '',
+                        show: false
+                    }})} inverted>
+                    <Icon name='checkmark' /> Got it
+                    </Button>
+                </Modal.Actions>
+            </Modal>
+        );
+    }
+
+    showNewAccountInfo(account) {
+        this.setState({newAccountInfo: {
+            name: account.name,
+            privateKey: account.privateKey,
+            show: true
+        }});
+    }
+
     async createAccount(password, name) {
         try {
-            await this.accountStore.newAccount(new Account(this.accountManager.newAccount(password), this.handleTransactionsUpdate.bind(this)));
+            const account = new Account(this.accountManager.newAccount(password));
+            await this.accountStore.newAccount(account, this.handleTransactionsUpdate.bind(this));
             if(!isMobile()) {
                 this.downloadKeyPair(name);
             }
-            Toaster.notify('Account Created', toast.TYPE.SUCCESS);
+            this.showNewAccountInfo(account);
         } catch (error) {
             console.log(error);
             Toaster.notify('Something Went Wrong!', toast.TYPE.ERROR);
@@ -230,6 +275,7 @@ export class Issuer extends Component {
     render() {
         return (
             <Grid.Column>
+                {this.newAccountModal()}
                 <Dimmer active={this.state.loading.toggle}>
                     <Loader indeterminate>{this.state.loading.message}</Loader>
                 </Dimmer>

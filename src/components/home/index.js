@@ -83,7 +83,6 @@ export class Home extends Component {
                                 .map(account => {return {text: account.account.publicKey, value: account.account.publicKey, label: { color: 'red', empty: true, circular: true }}})
                                 .map(option => <Dropdown.Item onClick={async (e, data) =>  {
                                     this.props.accountStore.switchAccount(data.value);
-                                    await this.props.badgeStore.setAccount(this.props.accountStore.current);
                                 }} key={option.value} {...option} />)}
                             </Dropdown.Menu>
                             </Dropdown.Menu>

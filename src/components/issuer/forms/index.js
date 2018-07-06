@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Form, Message } from 'semantic-ui-react'
+import { Form, Message, Radio, Grid } from 'semantic-ui-react'
 import  { AccountManager } from '../../../badgeforcejs-lib/account_manager';
 import DatePicker from 'react-datepicker';
 import { Toaster } from '../../utils/toaster';
@@ -71,10 +71,42 @@ export class RevokeForm extends Component {
     }
 }
 
+
+const isValidForm = (predicates) => {
+    const formErrors = predicates.filter(error => error !== null)
+    .map(error => error);
+
+    return {
+        valid: formErrors.length === 0,
+        errors: formErrors
+    }
+}
+
+const showFormErrors = (errors) => {
+    return (
+        <Message error
+            header='Problems with your input'
+            content={<Message.List items={errors.map((error, i) => {
+                return <Message.Item key={i} content={error.message} />
+            })} />}
+        />
+    )
+}
+
 export class NewAccountForm extends Component {
-    state = {password: '', name: '', formErrors: [], formError: false};
-    createAccount = async () => {
-        if(this.isValidForm()) {
+    constructor(props) {
+        super(props);
+        this.state = {password: '', name: '', formErrors: [], formError: false};
+        this.createAccount = this.createAccount.bind(this);
+    }
+
+    async createAccount() {
+        const formErrorPredicates = [
+            this.state.password === '' ? new Error('Password cannot be empty') : null,
+            this.state.name === '' ? new Error('Account Name cannot be empty') : null
+        ]
+        const validationResult = isValidForm(formErrorPredicates);
+        if(validationResult.valid) {
             try {
                 await this.props.handleCreateAccount(this.state.password, this.state.name);
                 this.setState({password: '', name: '', formErrors: [], formError: false});
@@ -82,51 +114,198 @@ export class NewAccountForm extends Component {
                 console.log(error);
                 this.setState({password: '', name: '', formErrors: [], formError: false});
             }
+        } else {
+            this.setState({formErrors: validationResult.errors, formError: true});
         }
     }
-    isValidForm = () => {
-        this.setState({formErrors: []})
-        let formErrors = this.state.formErrors;
-        return [
-            this.state.password === '' ? new Error('Password cannot be empty') : null
-        ].filter(error => error !== null)
-        .map(error => {
-            if(error) this.setState({formErrors: [...formErrors, error], formError: true});
-            return error;
-        }).length === 0;
-    }
-    showFormErrors = () => {
-        return (
-            <Message error
-                header='Problems with your input'
-                content={<Message.List items={this.state.formErrors.map((error, i) => {
-                    return <Message.Item key={i} content={error.message} />
-                })} />}
-            />
-        )
-    }
-    importAccount = async (e) => {
-        try {
-            await this.props.handleImportAccount(e, this.state.password);
-            this.setState({password: '', name: '', formErrors: [], formError: false});
-        } catch (error) {
-            console.log(error);
-            this.setState({password: '', name: '', formErrors: [], formError: false});
-        }
-    }
+
     render(){
         return (
             <Form size='large' style={{paddingTop: 25}} error={this.state.formError ? true : undefined}>
-                <Form.Input error={this.state.formError ? true : undefined} type='password' placeholder='very strong password' value={this.state.password}  mobile={4} tablet={12} onChange={(e, password) => this.setState({password: password.value})} />
-                <Form.Input placeholder='Name for account' value={this.state.name}  mobile={4} tablet={12} onChange={(e, name) => this.setState({name: name.value})} />
+                <Form.Input error={this.state.formError ? true : undefined} placeholder='Name for account' value={this.state.name}  mobile={4} tablet={12} onChange={(e, name) => this.setState({name: name.value})} />
+                <Form.Input error={this.state.formError ? true : undefined} type='password' placeholder='Very strong password' value={this.state.password}  mobile={4} tablet={12} onChange={(e, password) => this.setState({password: password.value})} />
                 <Form.Group style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
-                    <Form.Button style={{display: 'flex', alignSelf: 'flex-start'}} color='blue' onClick={this.createAccount} size='large' content='Create Account' icon='key' labelPosition='right'/>
-                    <Form.Button style={{display: 'flex', alignSelf: 'flex-start'}} color='orange' onClick={() => document.getElementById('accountUpload').click()} size='large' content='Upload Account File' icon='upload' labelPosition='right'/>
+                    <Form.Button disabled={this.state.password === '' || this.state.name === ''} 
+                        style={{display: 'flex', alignSelf: 'flex-start'}} color='blue' 
+                        onClick={this.createAccount} size='large' content='Create Account' icon='key' labelPosition='right'/>
                 </Form.Group>
-                {this.state.formErrors.length > 0 ? this.showFormErrors() : null}
-                <input type="file" id="accountUpload" onChange={this.importAccount} style={{display: 'none'}} />  
+                {this.state.formErrors.length > 0 ? showFormErrors(this.state.formErrors) : null}
             </Form>
         )
+    }
+}
+
+export class RawPrivateKeyForm extends Component {
+    state = {password: '', privateKey: '', formErrors: [], formError: false};
+    importRaw = async () => {
+        const formErrorPredicates = [
+            this.state.password === '' ? new Error('Password cannot be empty') : null,
+            this.state.privateKey === '' ? new Error('PrivateKey cannot be empty') : null
+        ]
+        const validationResult = isValidForm(formErrorPredicates);
+        if(validationResult.valid) {
+            try {
+                await this.props.handleImportRaw(this.state.password, this.state.privateKey);
+                this.setState({password: '', privateKey: '', formErrors: [], formError: false});
+            } catch (error) {
+                console.log(error);
+                this.setState({password: '', privateKey: '', formErrors: [], formError: false});
+            }
+        } else {
+            this.setState({formErrors: validationResult.errors, formError: true});
+        }
+    }
+
+    render(){
+        return (
+            <Form size='large' style={{paddingTop: 25}} error={this.state.formError ? true : undefined}>
+                <Form.Input error={this.state.formError ? true : undefined} 
+                    placeholder='Privatekey' value={this.state.privateKey}  
+                    mobile={4} tablet={12} 
+                    onChange={(e, privateKey) => this.setState({privateKey: privateKey.value})} />
+                <Form.Input error={this.state.formError ? true : undefined} 
+                    type='password' placeholder='Enter your password' value={this.state.password}  
+                    mobile={4} tablet={12} 
+                    onChange={(e, password) => this.setState({password: password.value})} />
+                <Form.Group style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
+                    <Form.Button disabled={this.state.password === '' || this.state.privateKey === ''}  
+                        style={{display: 'flex', alignSelf: 'flex-start'}} color='blue' 
+                        onClick={this.importRaw} size='large' content='Import Account' icon='key' labelPosition='right'/>
+                </Form.Group>
+                {this.state.formErrors.length > 0 ? showFormErrors(this.state.formErrors) : null}
+            </Form>
+        )
+    }
+}
+export class AccountFileUpload extends Component {
+    state = {password: '', formErrors: [], formError: false};
+    importAccount = async (e) => {
+        const formErrorPredicates = [
+            this.state.password === '' ? new Error('Password cannot be empty') : null
+        ];
+        const validationResult = isValidForm(formErrorPredicates);
+        if(validationResult.valid) {
+            try {
+                await this.props.handleImportAccount(e, this.state.password);
+                this.setState({password: '', formErrors: [], formError: false});
+            } catch (error) {
+                console.log(error);
+                this.setState({password: '', formErrors: [], formError: false});
+            }
+        } else {
+            this.setState({formErrors: validationResult.errors, formError: true});
+        }
+    }
+
+    render() {
+        return(
+            <Form size='large' style={{paddingTop: 25}} error={this.state.formError ? true : undefined}>
+                <Form.Input error={this.state.formError ? true : undefined} type='password' placeholder='Enter your password' value={this.state.password}  mobile={4} tablet={12} onChange={(e, password) => this.setState({password: password.value})} />
+                <Form.Group style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
+                    <Form.Button disabled={this.state.password === ''} 
+                    style={{display: 'flex', alignSelf: 'flex-start'}} color='orange' 
+                    onClick={() => document.getElementById('accountUpload').click()} size='large' content='Upload Account File' icon='upload' labelPosition='right'/>
+                </Form.Group>
+                {this.state.formErrors.length > 0 ? showFormErrors(this.state.formErrors) : null}
+                <input type="file" id="accountUpload" onChange={this.importAccount} style={{display: 'none'}} />  
+            </Form>
+        );
+    }
+}
+
+export class AccountOptions extends Component {
+    constructor(props) {
+        super(props);
+        this.options = [
+            {label: 'Upload Encrypted Account File', name: 'radioGroup', value: 'file'},
+            {label: 'Create New Account', name: 'radioGroup', value: 'form'},
+            {label: 'Import from Private Key', name: 'radioGroup', value: 'raw'},
+        ];
+
+        this.state = {
+            value: 'form'
+        };
+
+        this.renderSelection = this.renderSelection.bind(this);
+        this.renderOptions = this.renderOptions.bind(this);
+        this.handleChange = this.handleChange.bind(this);
+        this.renderAccountFileUpload = this.renderAccountFileUpload.bind(this);
+        this.renderRawForm = this.renderRawForm.bind(this);
+        this.handleImportAccount = this.handleImportAccount.bind(this);
+        this.handleCreateAccount = this.handleCreateAccount.bind(this);
+        this.handleImportRaw = this.handleImportRaw.bind(this);
+    }
+
+    async handleImportAccount(e, password) {
+        await this.props.handleImportAccount(e, password);
+    }
+
+    async handleCreateAccount(password, name) {
+        await this.props.handleCreateAccount(password, name);
+    }
+
+    async handleImportRaw(password) {
+        await this.props.importRaw(password);
+    }
+
+    renderAccountFileUpload() {
+        return (
+            <AccountFileUpload handleImportAccount={this.props.handleImportAccount} />
+        );
+    }
+
+    renderNewAccountForm() {
+        return (
+            <NewAccountForm handleCreateAccount={this.props.handleCreateAccount} />
+        );
+    }
+    renderRawForm() {
+        return (
+            <RawPrivateKeyForm handleImportRaw={this.props.importRaw} />
+        );
+    }
+
+    renderSelection() {
+        switch (this.state.value) {
+            case 'file':
+                return this.renderAccountFileUpload();
+            case 'form':
+                return this.renderNewAccountForm();
+            case 'raw': 
+                return this.renderRawForm();
+            default:
+                break;
+        }
+    }
+
+    handleChange(e, { value }) {
+        this.setState({ value })
+    }
+    renderOptions() {
+        return this.options.map((o, i) => {
+            return (
+                <Form.Field key={i} >
+                    <Radio
+                        label={o.label}
+                        name={o.name}
+                        value={o.value}
+                        checked={this.state.value === o.value}
+                        onChange={this.handleChange}
+                    />
+                </Form.Field>
+            );
+        })
+    }
+
+    render() {
+        return (
+            <Grid.Row>
+                <Form>
+                    {this.renderOptions()}
+                </Form>
+                {this.renderSelection()}
+            </Grid.Row>
+        );
     }
 }
 

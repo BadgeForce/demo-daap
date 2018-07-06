@@ -5,12 +5,12 @@ import namespacing from '../../badgeforcejs-lib/namespacing';
 export class BadgeStore extends ProtoDecoder {    
     @observable cache = []; 
 
-    async setAccount(issuer) {
-        console.log(issuer);
+    async setAccount(issuer, done) {
         try {
             this.account = issuer.account.publicKey;
             this.address = namespacing.partialLeafAddress(this.account, namespacing.ACADEMIC);
-            await this.poll(); 
+            this.cache = [];
+            await this.poll(done);
         } catch (error) {
             throw error;
         }
@@ -39,21 +39,22 @@ export class BadgeStore extends ProtoDecoder {
             throw new Error('Invalid protobuffer data')
         }
     }
-    
+
     isCached(key) {
         return this.cache.filter(badge => badge.key === key).length > 0;
     }
-    async poll() { 
-        console.log('polling');
+    async poll(done) { 
         try {
             const res = await this.queryState(this.address);
             let { data } = res;
-            data.map(async i => {
+
+            await Promise.all(data.map(async i => {
                 const hash = this.decodeStorageHash(Buffer.from(i.data, 'base64'));
                 const degree = await this.getDegreeCore(hash.hash);
                 degree.storageHash = hash;
                 await this.storeBadge(degree.storageHash.hash, degree);
-            });
+            }));
+            if(done) done(this.cache);
         } catch (error) {
             throw error;
         }

@@ -50,6 +50,7 @@ export class Credential extends Component {
         this.ipfsURI = `${ipfs}/${this.props.ipfs}`
     }
     showFullContent = () => {
+        console.log(this.props.data.image)
         const imageSrc = this.props.data.image || logo;
         return (
             <Card.Content>

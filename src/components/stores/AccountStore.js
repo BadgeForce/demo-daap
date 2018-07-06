@@ -16,10 +16,9 @@ export class AccountStore {
     this.current = null;
   }
 
-  async switchAccount(publicKey) {
+  switchAccount(publicKey) {
     try {
       this.current = this.findAccount(publicKey);
-      this.badgeCache = {};
     } catch (error) {
       throw error; 
     }
@@ -27,17 +26,17 @@ export class AccountStore {
 
   async newAccount(issuer) {
     try {
-        this.current = issuer;
         if(!this.findAccount(issuer.account.publicKey)) {
           this.accounts.push(issuer);   
           await this.deviceStore.setItem(issuer.account.publicKey, issuer.account.signer._privateKey.asHex());      
         }
-      return this.current;
+        if(!this.current) this.current = issuer;
+        return this.current;
     } catch (error) {
       throw new Error(error);
     }
   }
-
+  
   async getCache() {
     try {
       const keys = await this.deviceStore.keys();

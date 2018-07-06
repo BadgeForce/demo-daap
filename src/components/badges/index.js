@@ -3,12 +3,15 @@ import { List, Header, Image, Grid, Button, Dimmer, Loader } from 'semantic-ui-r
 import { Credential, sleep } from '../verifier';
 import { ProtoDecoder } from '../../badgeforcejs-lib/badgeforce_base' 
 import {observer, inject } from 'mobx-react';
+import { reaction } from 'mobx';
+import { Toaster } from '../utils/toaster';
+import { toast, ToastContainer } from 'react-toastify';
 const logo = require('../../assets/LogoBadgeforce.png');
 const QRCode = require('qrcode.react');
 
 const moment = require('moment');
 @observer
-export class CompactInfoList extends Component{
+export class CompactInfoList extends Component {
     badges = this.props.badges;
     handleClick = (badge, key) => {
         this.props.setActive(badge, key);
@@ -46,56 +49,105 @@ export class Badges extends Component {
             active: null,
             key: null,
             loading: {toggle: false, message: ''},
+            badges: this.props.badgeStore.cache
         }
         this.downloadQRC = this.downloadQRC.bind(this);
         this.qrc = React.createRef();
         this.accountStore = this.props.accountStore;
         this.refresh = this.refresh.bind(this);
+        this.doneLoading = this.doneLoading.bind(this);
+        this.accountMismathch = this.accountMismathch.bind(this);
+        this.accountChangeReaction = this.accountChangeReaction.bind(this);
+        this.disposeAccountChange = null;
+        
+
     }
-    async componentWillMount() {
-        if(this.props.accountStore.current !== null && this.props.badgeStore.cache.length === 0 ) {
-            this.setState({loading: {toggle: true, message: 'No badges found, polling blockchain . . .'}})
-            await this.props.badgeStore.poll();
-            sleep(3); 
-            this.setState({loading: {
-                toggle: false, message: '', 
-                active: this.props.badgeStore.cache[0].badge, 
-                key: this.props.badgeStore.cache[0].key
-            }});
-        } else {
-            this.setState({
-                active: this.props.badgeStore.cache[0].badge, 
-                key: this.props.badgeStore.cache[0].key
-            });
+    doneLoading(newCache) {
+        this.setState({
+            loading: { toggle: false, message: ''}, 
+            badges: newCache,
+            active: newCache.length > 0 ? newCache[0].badge : null,
+            key: newCache.length > 0 ? newCache[0].key : null,
+        });
+    }
+    
+    accountChangeReaction() {
+        return {
+            prop: () => this.props.accountStore.current, 
+            action: async current => {
+                this.setState({loading: {toggle: true, message: 'Account change detected . . .'}})
+                await sleep(1);
+                await this.props.badgeStore.setAccount(this.props.accountStore.current, this.doneLoading);
+            }
+        };
+    }
+
+    async componentDidMount() {
+        const accountChange = this.accountChangeReaction();
+        this.disposeAccountChange = reaction(accountChange.prop, accountChange.action);
+
+        try {
+            if(this.accountMismathch()) {
+                this.setState({loading: {toggle: true, message: 'Check for badges on blockchain . . .'}})
+                await sleep(1); 
+                await this.props.badgeStore.setAccount(this.props.accountStore.current, this.doneLoading);
+            } else if(this.props.badgeStore.cache.length === 0 ) {
+                this.setState({loading: {toggle: true, message: 'No badges found, polling blockchain . . .'}})
+                await sleep(1); 
+                await this.props.badgeStore.poll(this.doneLoading);
+            } else {
+                this.setState({loading: { toggle: false, message: ''}, badges: this.props.badgeStore.cache});
+            }
+        } catch (error) {
+            Toaster.notify("No account detected", toast.TYPE.WARNING);
         }
     }
+
+    accountMismathch() {
+        if(this.props.accountStore.current === null) {
+            throw new Error("No account detected");
+        }
+        
+        const badgeStoreAccount = this.props.badgeStore.account;
+        const accountNotMissing = badgeStoreAccount !== null || badgeStoreAccount !== undefined;
+        if(accountNotMissing) {
+            return true;
+        } 
+
+        return this.props.accountStore.current.getPublicKey() === badgeStoreAccount.getPublicKey();
+    }
+
+    componentWillUnmount() {
+        this.disposeAccountChange()
+    }
+
     async refresh() {
-        this.setState({loading: {toggle: true, message: 'Checking blockchain for new badges . . .'}})
-        await this.props.badgeStore.poll();
-        sleep(2);
-        this.setState({loading: {
-            toggle: false, message: '', 
-            active: this.props.badgeStore.cache[0].badge, 
-            key: this.props.badgeStore.cache[0].key
-        }});
+        this.setState({
+            loading: {toggle: true, message: 'Checking blockchain for new badges . . .'},
+            badges: [],
+            active: null, 
+            key: null
+        })
+        await this.props.badgeStore.poll(this.doneLoading);
+        await sleep(1);
     }
     renderBadges() {
         return (
             <Grid.Row>
                 <Grid.Column width={4} >
-                    <CompactInfoList badges={this.props.badgeStore.cache} setActive={(active, key) => this.setState({active, key})} />
+                    <CompactInfoList badges={this.state.badges} setActive={(active, key) => this.setState({active, key})} />
                 </Grid.Column> 
                 <Grid.Column style={{height: '100vh'}} computer={12} mobile={4} tablet={12}>
-                    {this.state.active ? this.renderActive() : null}
+                    {this.renderActive()}
                 </Grid.Column>  
             </Grid.Row>
         );
     }
     downloadQRC() {
-        const dataStr = "data:text/json;charset=utf-8," + JSON.stringify({data: ProtoDecoder.encodedQRDegree(this.state.active)});
+        const dataStr = "data:text/json;charset=utf-8," + JSON.stringify({data: ProtoDecoder.encodedQRDegree(this.props.badgeStore.cache[0].badge)});
         const link = document.createElement("a");
         link.href = dataStr;
-        link.download = `badgeforce-credential-${this.state.active.coreInfo.name}.bfac`;
+        link.download = `badgeforce-credential-${this.props.badgeStore.cache[0].badge.coreInfo.name}.bfac`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
@@ -103,13 +155,19 @@ export class Badges extends Component {
     renderActive() {
         // const qrCodeVal = JSON.stringify({data: ProtoDecoder.encodedQRStorageHash(this.state.key)});
         // console.log(qrCodeVal);
-        return(
-            <div>
-                <Credential full={true} data={this.state.active.coreInfo} signature={this.state.active.signature} ipfs={this.state.key}/>
-                {/* <QRCode id='qrcode' size={160} style={{height: 'auto', width: 'auto'}} value={qrCodeVal} /> */}
-                <Button style={{display: 'flex', alignSelf: 'flex-start'}} color='blue' onClick={this.downloadQRC} size='large' content='download credential file' icon='download' labelPosition='right'/>
-            </div>
-        );
+        const badge = this.state.active || this.state.badges[0].badge;
+        const key = this.state.key || this.state.badges[0].key;
+        if(badge && key) {
+            return (
+                <div>
+                    <Credential full={true} data={badge.coreInfo} signature={badge.signature} ipfs={key}/>
+                    {/* <QRCode id='qrcode' size={160} style={{height: 'auto', width: 'auto'}} value={qrCodeVal} /> */}
+                    <Button style={{display: 'flex', alignSelf: 'flex-start'}} color='blue' onClick={this.downloadQRC} size='large' content='download credential file' icon='download' labelPosition='right'/>
+                </div>
+            );
+        } else {
+            return null
+        }
     }
     noBadges() {
         return(
@@ -123,6 +181,7 @@ export class Badges extends Component {
     render() {
         return (
             <Grid.Column>
+                <ToastContainer autoClose={5000} />
                 <Dimmer active={this.state.loading.toggle}>
                     <Loader indeterminate>{this.state.loading.message}</Loader>
                 </Dimmer>
@@ -130,7 +189,9 @@ export class Badges extends Component {
                     <Button style={{display: 'flex', alignSelf: 'flex-start'}} circular color='grey' onClick={this.refresh} size='large' icon='refresh'/>
                 </Grid.Row>
                 <Grid columns={2} centered container stackable>
-                     {this.props.badgeStore.cache.length > 0 ? this.renderBadges() : this.noBadges()}
+                    {!this.state.loading.toggle ? 
+                        this.state.badges.length > 0 ? this.renderBadges() : this.noBadges() : null
+                    }    
                 </Grid>
             </Grid.Column>
         )
