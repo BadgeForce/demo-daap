@@ -19,31 +19,33 @@ export class Batch {
 }
 
 export class Watcher {
-    constructor(transaction, done) {
+    constructor(id, transaction, commited) {
         this.transaction = transaction;
-        this.done = done;
-        this.id = transaction.link;
+        this.commited = commited;
+        this.link = transaction.link;
+        this.id = id;
     }
 
     sleep(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
+
     async watch() {
         try {
             while(this.transaction.status === 'PENDING') {
                 await this.sleep(5000);
-                console.log("POLLING");
                 await this.poll();
             }
-
-            this.done(this);
+            this.commited(this);
         } catch (error) {
-            throw new Error(error);   
+            // throw new Error(error);   
+            console.log(error);
         }
     }
+
     async poll() {
         try {
-            const response = await window.fetch(new Request(this.id, {method: 'GET', headers: {'Content-Type': 'application/json'}}));
+            const response = await window.fetch(new Request(this.link, {method: 'GET', headers: {'Content-Type': 'application/json'}}));
             this.transaction.status = (await response.json()).data[0].status;
         } catch (error) {
             throw new Error(error);
@@ -52,23 +54,23 @@ export class Watcher {
 }
 
 export class BatchStatusWatcher {
-    constructor(store) {
-        this.store = store;
+    constructor(done) {
+        this.done = done;
     }
 
-    watcherCB(commitedTxn, watcherLink) {
-        this.unsubscribe(watcherLink);
-    }
-
-    subscribe(batch, cb) {
+    static subscribe(batch, id, cb) {
         const watcher = new Watcher(batch, cb);
         watcher.watch();
         return watcher;
     }
 
-    unsubscribe(watcherLink) {
-        this.watchers = this.watchers.filter(w => {
-            return w.link !== watcherLink;
-        });
+    async unsubscribe(id) {
+        const transaction = this.watchers[id];
+        try {
+            delete this.watchers[id];
+            await this.done(id, transaction);
+        } catch (error) {
+            throw new Error(JSON.stringify({error: "Could not unsubcribe watcher", id: id, transaction}));
+        }
     }
 }

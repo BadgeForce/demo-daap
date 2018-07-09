@@ -6,13 +6,13 @@ export class BadgeStore extends ProtoDecoder {
     @observable cache = []; 
 
     async setAccount(issuer, done) {
+        this.account = issuer.account.publicKey;
+        this.address = namespacing.partialLeafAddress(this.account, namespacing.ACADEMIC);
+        this.cache = [];
         try {
-            this.account = issuer.account.publicKey;
-            this.address = namespacing.partialLeafAddress(this.account, namespacing.ACADEMIC);
-            this.cache = [];
             await this.poll(done);
         } catch (error) {
-            throw error;
+            console.log(error);
         }
     }
 
@@ -54,9 +54,10 @@ export class BadgeStore extends ProtoDecoder {
                 degree.storageHash = hash;
                 await this.storeBadge(degree.storageHash.hash, degree);
             }));
-            if(done) done(this.cache);
+            if(done) done(this.cache, null);
         } catch (error) {
-            throw error;
+            console.log(error);
+            if(done) done(this.cache, new Error('Could not load badges, click refresh button to try again'));
         }
     }
 

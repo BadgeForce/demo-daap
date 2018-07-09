@@ -85,7 +85,7 @@ export class AccountManager extends BadgeForceBase {
         account.publicKey = account.signer.getPublicKey().asHex();
         return account;
     }
-
+    
     newAccessKeyPair(password) {
         try {
             const priv = cryptico.generateRSAKey(password, 1024);

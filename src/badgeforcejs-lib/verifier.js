@@ -75,9 +75,13 @@ export class Verifier extends BadgeForceBase {
     }
 
     verifySignature(degree) {
-        const sigBytes = Buffer.from(degree.signature, 'hex');
-        const dataHash = createHash('sha256').update(Core.encode(degree.coreInfo).finish()).digest();
-        return secp256k1.verify(dataHash, sigBytes, Buffer.from(degree.coreInfo.issuer, 'hex'));
+        try {
+            const sigBytes = Buffer.from(degree.signature, 'hex');
+            const dataHash = createHash('sha256').update(Core.encode(degree.coreInfo).finish()).digest();
+            return secp256k1.verify(dataHash, sigBytes, Buffer.from(degree.coreInfo.issuer, 'hex'));
+        } catch (error) {
+            return false;
+        }
     }
 
     async verifyAcademic(recipient, credentialName, institutionId) {

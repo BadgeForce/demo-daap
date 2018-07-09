@@ -70,25 +70,39 @@ export class Transactor extends BadgeForceBase {
     }
 
     submitBatch = async (batch) => {
-        console.log(Buffer.from(batch).toString("base64"));
         try {
             const request = new Request(this.batchesURI, {
                 method: 'POST', 
-                body: Buffer.from(batch).toString("base64"),
-                headers: new Headers({'Content-Type': 'text/plain'})
+                body: JSON.stringify({data: Buffer.from(batch).toString("base64")}),
+                headers: new Headers({'Content-Type': 'application/json'})
             });
-            const response = await window.fetch(request);
-            return await response.json();
+            const response = await this.parseResponseJSON(await window.fetch(request));
+            if(!response.ok) {
+                console.log(response);
+                throw JSON.stringify(response.json);
+            } 
+
+            return response.json;
         } catch (error) {
-            throw new Error(error)
+            console.log(error);
+            throw error;
         }
+    }
+
+    async parseResponseJSON(response) {
+        return new Promise((resolve) => response.json()
+          .then((json) => resolve({
+            status: response.status,
+            ok: response.ok,
+            json,
+          })));
+        
     }
 
     issue = async (coreData, signer) => {    
         try {
             const core = Core.create(coreData);
             const academicCred = AcademicCredential.create({coreInfo: core, signature: signer.sign(Core.encode(core).finish())});
-            console.log("SIGNATURE ISSUE: ", academicCred.signature)
             // we are going to wrap this data in google.protobuf.any, to allow for arbitrary data passing in our 1 transaction handler many subhandler scheme 
             const issueAny = google.protobuf.Any.create({
                 type_url: 'github.com/BadgeForce/badgeforce-chain-node/credentials/proto/issuer_pb.AcademicCredential', value: AcademicCredential.encode(academicCred).finish()
@@ -100,9 +114,7 @@ export class Transactor extends BadgeForceBase {
                 namespacing.identifierAddress(namespacing.ISSUANCE, issuer, academicCred.signature.concat(issuer)),
                 namespacing.identifierAddress(namespacing.ACADEMIC, core.recipient, core.recipient.concat(core.name).concat(core.institutionId))
             ];
-    
-            console.log('namespaceAddresses', namespaceAddresses)
-    
+
             const inputs = [...namespaceAddresses], outputs = [...namespaceAddresses];
             return await this.submitBatch(this.newSingleBatch(inputs, outputs, signer, [], payload));
         } catch (error) {
@@ -112,9 +124,7 @@ export class Transactor extends BadgeForceBase {
 
     revoke = async (signature, signer) => {    
         try {
-            const revokation = Revoke.create({signature});
-            console.log("SIGNATURE REVOKE: ", revokation)
-    
+            const revokation = Revoke.create({signature});    
             // we are going to wrap this data in google.protobuf.any, to allow for arbitrary data passing in our 1 transaction handler many subhandler scheme 
             const revokationAny = google.protobuf.Any.create({
                 type_url: 'github.com/BadgeForce/badgeforce-chain-node/credentials/proto/issuer_pb.Revoke', value: Revoke.encode(revokation).finish()

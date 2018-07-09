@@ -44,7 +44,7 @@ export class Issuer extends Component {
         super(props);
         this.state = {
             results: null,
-            loading: {toggle: false, message: ''},
+            loading: {toggle: true, message: ''},
             visible: false,
             confirmPassword: {show: false, account: null, loading: false},
             error: null,
@@ -81,30 +81,29 @@ export class Issuer extends Component {
             { menuItem: 'Revoke', render: () => <Tab.Pane>{<RevokeForm demoCred={this.demoCred} handle={this.handleRevoke} />}</Tab.Pane> },
             { menuItem: <Menu.Item ref={this.accountsTabRef} as={Button} key='accounts'>Accounts</Menu.Item>, 
                 render: () => {
-                    const handleCreateAccount = this.createAccount.bind(this)
-                    const handleImportAccount = this.importAccount.bind(this)
-                    const props = {handleCreateAccount, handleImportAccount};
-                    return <Tab.Pane>{<AccountOptions handleCreateAccount={async (password, name) => await this.createAccount(password, name)} />}</Tab.Pane>
+                    return <Tab.Pane>{<AccountOptions 
+                            handleCreateAccount={async (password, name) => await this.createAccount(password, name)} 
+                            handleImportAccount={async (e, password) => await this.importAccount(e, password)}
+                            handleImportRaw={async (privateKey) => await this.importAccountRaw(privateKey)}
+                        />
+                    }</Tab.Pane>
             }}
         ]
 
         this.accountManager = new AccountManager();
     }
-    async componentWillMount() {
+    async componentDidMount() {
         if(this.accountStore.current === null) {
             this.setState({loading: {toggle: true, message: 'Loading accounts from browser storage'}})
-            const accountCache = await this.accountStore.getCache();
+            const noAccounts = await this.accountStore.getCache();
             await sleep(1);
-            if(accountCache.length === 0) {
+            if(noAccounts) {
                 Toaster.notify("No accounts found in storage, create one using accounts tab", toast.TYPE.WARNING);
-                this.setState({loading: {toggle: false, message: ''}})
-            } else {
-                accountCache.forEach(async account => {
-                    await this.props.accountStore.newAccount(new Account(account, this.handleTransactionsUpdate.bind(this)));
-                });
-                this.setState({loading: {toggle: false, message: ''}})
             }
-        }        
+            this.setState({loading: {toggle: false, message: ''}})
+        } else {
+            this.setState({loading: {toggle: false, message: ''}})
+        }
     }
 
     newAccountModal() {
@@ -131,10 +130,10 @@ export class Issuer extends Component {
         );
     }
 
-    showNewAccountInfo(account) {
+    showNewAccountInfo(info) {
         this.setState({newAccountInfo: {
-            name: account.name,
-            privateKey: account.privateKey,
+            name: info.name,
+            privateKey: info.privateKey,
             show: true
         }});
     }
@@ -142,11 +141,15 @@ export class Issuer extends Component {
     async createAccount(password, name) {
         try {
             const account = new Account(this.accountManager.newAccount(password));
-            await this.accountStore.newAccount(account, this.handleTransactionsUpdate.bind(this));
+            await this.accountStore.newAccount(account);
+            this.accountStore.switchAccount(account.account.publicKey);
             if(!isMobile()) {
                 this.downloadKeyPair(name);
             }
-            this.showNewAccountInfo(account);
+            this.showNewAccountInfo({
+                name, 
+                privateKey: account.account.signer._privateKey.asHex()
+            });
         } catch (error) {
             console.log(error);
             Toaster.notify('Something Went Wrong!', toast.TYPE.ERROR);
@@ -169,7 +172,7 @@ export class Issuer extends Component {
                     notifyMsg,
                     confirm;
 
-                if(error.message === invalidPassword){
+                if(error.message === invalidPassword) {
                     notifyMsg = 'Account password invalid, try re-enter password';
                     confirm = true;
                 } else {
@@ -186,9 +189,10 @@ export class Issuer extends Component {
         }
         
         if(!handleErr(error)) {
-            Toaster.notify('Account Imported', toast.TYPE.SUCCESS);
-            await this.accountStore.newAccount(new Account(account, this.handleTransactionsUpdate.bind(this)));
+            await this.accountStore.newAccount(new Account(account));
+            await this.accountStore.switchAccount(account.publicKey);
             this.setState(stateUpdate);
+            Toaster.notify('Account Imported', toast.TYPE.SUCCESS);
         }   
     }
     async importAccount(e, password) {
@@ -203,6 +207,27 @@ export class Issuer extends Component {
                 loading: {toggle: false, message: ''},
                 // error
             });
+        }
+    }
+
+    async importAccountRaw (privateKey) {
+        let account;
+        try {
+            account = new Account(AccountManager.fromRaw(privateKey));
+        } catch (error) {
+            console.log(error);
+            Toaster.notify('Could not create account from private key, make sure key is correct', toast.TYPE.ERROR);
+            return;
+        }
+
+        try {
+            console.log(account);
+            await this.accountStore.newAccount(account);
+            this.accountStore.switchAccount(account.account.publicKey);
+        } catch (error) {
+            console.log(error);
+            Toaster.notify('Something Went Wrong!', toast.TYPE.ERROR);
+            return;
         }
     }
 
@@ -222,7 +247,6 @@ export class Issuer extends Component {
     }
 
     async handleIssue(data) {
-        console.log(data);
         this.setState({results: null, visible: false, loading: true});
         try {
             const {recipient, dateEarned, name, expiration, image} = data;
@@ -235,23 +259,16 @@ export class Issuer extends Component {
                 name,
                 image
             }
-
-            const watcher = await this.accountStore.current.issueAcademic(coreData);
-            console.log(watcher);
-            this.setState(prevState => ({
-                loading: {toggle: false, message: ''},
-                visible: true,
-                toastId: null,
-                transactions: [...prevState.transactions, watcher]
-            }));
+            await this.accountStore.current.issueAcademic(coreData);
         } catch (error) {
-            Toaster.notify('Something Went Wrong While Issuing!', toast.TYPE.ERROR);
+            Toaster.notify(error.message, toast.TYPE.ERROR);
             this.setState({
                 results: null,
                 loading: {toggle: false, message: ''},
                 error,
                 toastId: null
             });
+            return true;
         }
     }
 
@@ -266,7 +283,6 @@ export class Issuer extends Component {
                 transactions: [...prevState.transactions, watcher]
             }));
         } catch (error) {
-            console.log(error);
             Toaster.notify('Something Went Wrong While Revoking!', toast.TYPE.ERROR);
             this.setState({results: null, visible: false, loading: false});
         }
@@ -304,7 +320,7 @@ export class Issuer extends Component {
                 {!this.state.loading.toggle ? 
                     <Grid.Column>
                         <Tab menu={{ fluid: true, vertical: false}} panes={this.panes} />
-                        <Transactions transactions={this.state.transactions}/>
+                        <Transactions />
                     </Grid.Column> : 
                     null
                 }

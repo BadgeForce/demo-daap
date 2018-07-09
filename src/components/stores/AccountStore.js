@@ -1,24 +1,32 @@
-import { observable, computed } from 'mobx';
-import { BadgeStore } from './BadgeStore';
+import { observable } from 'mobx';
 import { AccountManager } from '../../badgeforcejs-lib/account_manager';
+import { Issuer as Account } from '../../badgeforcejs-lib/issuer';
+import { BatchStatusWatcher } from '../../badgeforcejs-lib/batch_status_watcher';
 
 const localforage = require('localforage');
 
 export class AccountStore { 
   @observable accounts;
   @observable current; 
-  @observable badgeCache = {};
-  deviceStore = localforage.createInstance({name: "badgeforce-accounts"});
+  @observable disableMenu = false;
+  accountDeviceStore = localforage.createInstance({name: "badgeforce-accounts"});
+
+  batchStatusWorker = new BatchStatusWatcher();
 
   constructor() {
-    this.deviceStore.keys()
     this.accounts = [];
     this.current = null;
+    this.currentTransactions = [];
   }
 
   switchAccount(publicKey) {
     try {
-      this.current = this.findAccount(publicKey);
+      this.disableMenu = true;
+      const account = this.findAccount(publicKey);
+      if(account) {
+        this.current = account;
+      }
+      this.disableMenu = false;
     } catch (error) {
       throw error; 
     }
@@ -26,12 +34,12 @@ export class AccountStore {
 
   async newAccount(issuer) {
     try {
+        this.disableMenu = true;
         if(!this.findAccount(issuer.account.publicKey)) {
-          this.accounts.push(issuer);   
-          await this.deviceStore.setItem(issuer.account.publicKey, issuer.account.signer._privateKey.asHex());      
+          await this.accountDeviceStore.setItem(issuer.account.publicKey, issuer.account.signer._privateKey.asHex());  
+          this.accounts.push(issuer);      
         }
-        if(!this.current) this.current = issuer;
-        return this.current;
+        this.disableMenu = false;
     } catch (error) {
       throw new Error(error);
     }
@@ -39,11 +47,24 @@ export class AccountStore {
   
   async getCache() {
     try {
-      const keys = await this.deviceStore.keys();
-      return Promise.all(keys.map(async (key, i) => {
-        const priv = await this.deviceStore.getItem(key);
+      this.disableMenu = true;
+      const keys = await this.accountDeviceStore.keys();
+      const accountCache = await Promise.all(keys.map(async (key, i) => {
+        const priv = await this.accountDeviceStore.getItem(key);
         return AccountManager.fromRaw(priv);
       }));
+
+      accountCache.forEach( account => {
+        this.accounts.push(new Account(account));
+      });
+      
+      if(this.accounts.length > 0) {
+        this.disableMenu = false;
+        this.current = this.accounts[0];
+        return false;
+      }
+      this.disableMenu = false;
+      return true;
     } catch (error) {
       throw error;
     }

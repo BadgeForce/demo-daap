@@ -49,7 +49,8 @@ export class Badges extends Component {
             active: null,
             key: null,
             loading: {toggle: false, message: ''},
-            badges: this.props.badgeStore.cache
+            badges: this.props.badgeStore.cache,
+            errorLoadingBadges: {toggle: null, message: null}
         }
         this.downloadQRC = this.downloadQRC.bind(this);
         this.qrc = React.createRef();
@@ -62,12 +63,13 @@ export class Badges extends Component {
         
 
     }
-    doneLoading(newCache) {
+    doneLoading(newCache, error) {
         this.setState({
             loading: { toggle: false, message: ''}, 
             badges: newCache,
             active: newCache.length > 0 ? newCache[0].badge : null,
             key: newCache.length > 0 ? newCache[0].key : null,
+            errorLoadingBadges: {toggle: error !== null, message: error ? error.message : null}
         });
     }
     
@@ -99,7 +101,8 @@ export class Badges extends Component {
                 this.setState({loading: { toggle: false, message: ''}, badges: this.props.badgeStore.cache});
             }
         } catch (error) {
-            Toaster.notify("No account detected", toast.TYPE.WARNING);
+            Toaster.notify("Could not load badges, click refresh button to try again", toast.TYPE.ERROR);
+            this.setState({loading: { toggle: false, message: ''}, badges: []});
         }
     }
 
@@ -170,10 +173,11 @@ export class Badges extends Component {
         }
     }
     noBadges() {
+        const message = this.state.errorLoadingBadges.toggle ? this.state.errorLoadingBadges.message : 'No Badges Found For This Account';
         return(
             <Grid.Row>
                 <Grid.Column computer={12} mobile={4} tablet={12}>
-                    <Header style={{display: 'flex', alignItems: 'center'}} as='h1' content='No Badges Found For This Account' textAlign='center' /> 
+                    <Header style={{display: 'flex', alignItems: 'center'}} as='h1' content={message} textAlign='center' /> 
                 </Grid.Column> 
             </Grid.Row>
         );

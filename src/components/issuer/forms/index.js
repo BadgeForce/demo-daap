@@ -14,51 +14,40 @@ const moment = require('moment');
 export class RevokeForm extends Component {
     constructor(props){
         super(props);
-        this.state = {recipient: '', credentialName: '', institutionId: this.props.demoCred.institutionId, formErrors: [], formError: false};
+        this.state = {recipient: '', credentialName: '', institutionId: this.props.demoCred.institutionId, formErrors: [], loading: false, formError: false};
         this.showFormErrors = this.showFormErrors.bind(this);
         this.isValidForm = this.isValidForm.bind(this);
         this.accountManager = new AccountManager();
     }
     handleRevoke = async() => {
-        if(this.isValidForm()){
-            try {
-                await this.props.handle(this.state)
-                this.setState({recipient: '', credentialName: '', formErrors: [], formError: false});
-            } catch (error) {
-                console.log(error);
-                this.setState({recipient: '', credentialName: '', formErrors: [], formError: false});
-            }       
-        }
-    }
-    isValidForm() {
-        const errors = [
+        this.formLoading(true);
+        const formErrorPredicates = [
             !this.accountManager.isValidPublicKey(this.state.recipient) ? new Error('Invalid public key for recipient') : null,
             this.state.credentialName === '' ? new Error('Credential name is required') : null
-        ].filter(error => {
-            return error !== null;
-        });
-
-        if(errors.length > 0) {
-            this.setState({formErrors: errors, formError: true});
-            return false
+        ]
+        const validationResult = isValidForm(formErrorPredicates);
+        if(validationResult.valid) {
+            try {
+                await this.props.handle(this.state)
+                this.setState({loading: false, recipient: '', credentialName: '', formErrors: [], formError: false});
+            } catch (error) {
+                console.log(error);
+                this.setState(previousState => {
+                    const {loading, formErrors, formError, ...state} = previousState;
+                    return {...state, loading: false, formErrors: [], formError: false};
+                });
+            }       
+        } else {
+            this.setState(previousState => {
+                const {loading, formErrors, formError, ...state} = previousState;
+                return {...state, loading: false, formErrors: validationResult.errors, formError: true};
+            });
         }
-
-        this.setState({formErrors: errors, formError: false});
-        return true;
     }
-    showFormErrors() {
-        return (
-            <Message error
-                header='Problems with your input'
-                content={<Message.List items={this.state.formErrors.map((error, i) => {
-                    return <Message.Item key={i} content={error.message} />
-                })} />}
-            />
-        )
-    }
+    
     render(){
         return (
-            <Form size='large' style={{paddingTop: 25}} error={this.state.formError ? true : undefined}>
+            <Form loading={this.state.loading} size='large' style={{paddingTop: 25}} error={this.state.formError ? true : undefined}>
                 <Form.Input error={this.state.formError ? true : undefined} value={this.state.recipient}  mobile={4} tablet={12} placeholder='Recipient Public Key' onChange={(e, recipient) => this.setState({recipient: recipient.value})} />
                 <Form.Input error={this.state.formError ? true : undefined} value={this.state.credentialName}  mobile={4} tablet={12} placeholder='Credential Name' onChange={(e, credentialName) => this.setState({credentialName: credentialName.value})} />
                 <Form.Input value={this.state.institutionId} disabled mobile={4} tablet={12} placeholder='Institution ID provided for all credentials issued using demo BadgeForce University Issuer' onChange={(e, institutionId) => this.setState({institutionId: institutionId.value})} />
@@ -70,7 +59,6 @@ export class RevokeForm extends Component {
         )
     }
 }
-
 
 const isValidForm = (predicates) => {
     const formErrors = predicates.filter(error => error !== null)
@@ -96,11 +84,12 @@ const showFormErrors = (errors) => {
 export class NewAccountForm extends Component {
     constructor(props) {
         super(props);
-        this.state = {password: '', name: '', formErrors: [], formError: false};
+        this.state = {password: '', name: '', formErrors: [], formError: false, loading: false};
         this.createAccount = this.createAccount.bind(this);
     }
 
     async createAccount() {
+        this.formLoading(true);
         const formErrorPredicates = [
             this.state.password === '' ? new Error('Password cannot be empty') : null,
             this.state.name === '' ? new Error('Account Name cannot be empty') : null
@@ -109,19 +98,26 @@ export class NewAccountForm extends Component {
         if(validationResult.valid) {
             try {
                 await this.props.handleCreateAccount(this.state.password, this.state.name);
-                this.setState({password: '', name: '', formErrors: [], formError: false});
+                this.setState({loading: false, password: '', name: '', formErrors: [], formError: false});
             } catch (error) {
-                console.log(error);
-                this.setState({password: '', name: '', formErrors: [], formError: false});
+                this.setState(previousState => {
+                    const {loading, formErrors, formError, ...state} = previousState;
+                    return {...state, loading: false, formErrors: [], formError: false};
+                });
             }
         } else {
-            this.setState({formErrors: validationResult.errors, formError: true});
+            this.setState(previousState => {
+                const {loading, formErrors, formError, ...state} = previousState;
+                return {...state, loading: false, formErrors: validationResult.errors, formError: true};
+            });
         }
     }
-
+    formLoading(loading) {
+        this.setState({loading});
+    }
     render(){
         return (
-            <Form size='large' style={{paddingTop: 25}} error={this.state.formError ? true : undefined}>
+            <Form loading={this.state.loading} size='large' style={{paddingTop: 25}} error={this.state.formError ? true : undefined}>
                 <Form.Input error={this.state.formError ? true : undefined} placeholder='Name for account' value={this.state.name}  mobile={4} tablet={12} onChange={(e, name) => this.setState({name: name.value})} />
                 <Form.Input error={this.state.formError ? true : undefined} type='password' placeholder='Very strong password' value={this.state.password}  mobile={4} tablet={12} onChange={(e, password) => this.setState({password: password.value})} />
                 <Form.Group style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
@@ -136,37 +132,41 @@ export class NewAccountForm extends Component {
 }
 
 export class RawPrivateKeyForm extends Component {
-    state = {password: '', privateKey: '', formErrors: [], formError: false};
+    state = {privateKey: '', formErrors: [], formError: false, loading: false};
+    formLoading(loading) {
+        this.setState({loading});
+    }
     importRaw = async () => {
+        this.formLoading(true);
         const formErrorPredicates = [
-            this.state.password === '' ? new Error('Password cannot be empty') : null,
             this.state.privateKey === '' ? new Error('PrivateKey cannot be empty') : null
         ]
         const validationResult = isValidForm(formErrorPredicates);
         if(validationResult.valid) {
             try {
-                await this.props.handleImportRaw(this.state.password, this.state.privateKey);
-                this.setState({password: '', privateKey: '', formErrors: [], formError: false});
+                await this.props.handleImportRaw(this.state.privateKey);
+                this.setState({loading: false, privateKey: '', formErrors: [], formError: false});
             } catch (error) {
-                console.log(error);
-                this.setState({password: '', privateKey: '', formErrors: [], formError: false});
+                this.setState(previousState => {
+                    const {loading, formErrors, formError, ...state} = previousState;
+                    return {...state, loading: false, formErrors: [], formError: false};
+                });
             }
         } else {
-            this.setState({formErrors: validationResult.errors, formError: true});
+            this.setState(previousState => {
+                const {loading, formErrors, formError, ...state} = previousState;
+                return {...state, loading: false, formErrors: validationResult.errors, formError: true};
+            });
         }
     }
 
     render(){
         return (
-            <Form size='large' style={{paddingTop: 25}} error={this.state.formError ? true : undefined}>
+            <Form loading={this.state.loading} size='large' style={{paddingTop: 25}} error={this.state.formError ? true : undefined}>
                 <Form.Input error={this.state.formError ? true : undefined} 
                     placeholder='Privatekey' value={this.state.privateKey}  
                     mobile={4} tablet={12} 
                     onChange={(e, privateKey) => this.setState({privateKey: privateKey.value})} />
-                <Form.Input error={this.state.formError ? true : undefined} 
-                    type='password' placeholder='Enter your password' value={this.state.password}  
-                    mobile={4} tablet={12} 
-                    onChange={(e, password) => this.setState({password: password.value})} />
                 <Form.Group style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
                     <Form.Button disabled={this.state.password === '' || this.state.privateKey === ''}  
                         style={{display: 'flex', alignSelf: 'flex-start'}} color='blue' 
@@ -178,7 +178,7 @@ export class RawPrivateKeyForm extends Component {
     }
 }
 export class AccountFileUpload extends Component {
-    state = {password: '', formErrors: [], formError: false};
+    state = {password: '', formErrors: [], formError: false, loading: false};
     importAccount = async (e) => {
         const formErrorPredicates = [
             this.state.password === '' ? new Error('Password cannot be empty') : null
@@ -187,19 +187,26 @@ export class AccountFileUpload extends Component {
         if(validationResult.valid) {
             try {
                 await this.props.handleImportAccount(e, this.state.password);
-                this.setState({password: '', formErrors: [], formError: false});
+                this.setState({loading: false, password: '', formErrors: [], formError: false});
             } catch (error) {
-                console.log(error);
-                this.setState({password: '', formErrors: [], formError: false});
+                this.setState(previousState => {
+                    const {loading, formErrors, formError, ...state} = previousState;
+                    return {...state, loading: false, formErrors: [], formError: false};
+                });
             }
         } else {
-            this.setState({formErrors: validationResult.errors, formError: true});
+            this.setState(previousState => {
+                const {loading, formErrors, formError, ...state} = previousState;
+                return {...state, loading: false, formErrors: validationResult.errors, formError: true};
+            });
         }
     }
-
+    formLoading(loading) {
+        this.setState({loading});
+    }
     render() {
         return(
-            <Form size='large' style={{paddingTop: 25}} error={this.state.formError ? true : undefined}>
+            <Form loading={this.state.loading} size='large' style={{paddingTop: 25}} error={this.state.formError ? true : undefined}>
                 <Form.Input error={this.state.formError ? true : undefined} type='password' placeholder='Enter your password' value={this.state.password}  mobile={4} tablet={12} onChange={(e, password) => this.setState({password: password.value})} />
                 <Form.Group style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
                     <Form.Button disabled={this.state.password === ''} 
@@ -231,21 +238,6 @@ export class AccountOptions extends Component {
         this.handleChange = this.handleChange.bind(this);
         this.renderAccountFileUpload = this.renderAccountFileUpload.bind(this);
         this.renderRawForm = this.renderRawForm.bind(this);
-        this.handleImportAccount = this.handleImportAccount.bind(this);
-        this.handleCreateAccount = this.handleCreateAccount.bind(this);
-        this.handleImportRaw = this.handleImportRaw.bind(this);
-    }
-
-    async handleImportAccount(e, password) {
-        await this.props.handleImportAccount(e, password);
-    }
-
-    async handleCreateAccount(password, name) {
-        await this.props.handleCreateAccount(password, name);
-    }
-
-    async handleImportRaw(password) {
-        await this.props.importRaw(password);
     }
 
     renderAccountFileUpload() {
@@ -261,7 +253,7 @@ export class AccountOptions extends Component {
     }
     renderRawForm() {
         return (
-            <RawPrivateKeyForm handleImportRaw={this.props.importRaw} />
+            <RawPrivateKeyForm handleImportRaw={this.props.handleImportRaw} />
         );
     }
 
@@ -315,33 +307,54 @@ export class IssueForm extends Component {
     constructor(props){
         super(props);
         this.state = {recipient: '', dateEarned: null, name: '', image: null, expiration: null, formErrors: [], formError: false, loading: false};
-        this.showFormErrors = this.showFormErrors.bind(this);
         this.showNoAccountWarning = this.showNoAccountWarning.bind(this);
-        this.isValidForm = this.isValidForm.bind(this);
-
         this.accountStore = this.props.accountStore;
         this.accountManager = new AccountManager();
     }
     uploadImage = (e) => {
-        this.setState({loading: true});
+        this.formLoading(true)
         try {
             const files = document.getElementById('credentialImageUpload').files;
             this.accountManager.readFile(files.item(0), this.accountManager.fileTypes.image, results => {
-                console.log(results);
                 this.setState({loading: false, image: results});
                 Toaster.notify('Image uploaded', toast.TYPE.SUCCESS);
                 document.getElementById('credentialImageUpload').value = '';
             });
         } catch (error) {
+            this.formLoading(false);
             console.log(error);
             Toaster.notify('Could not upload image, try again or issue without it', toast.TYPE.ERROR);
         }
     }
+
+    formLoading(loading) {
+        this.setState({loading});
+    }
+
     handleIssue = async () => {
-        if(this.isValidForm()) {
-            console.log(this.state);
-            await this.props.handle(this.state);
-            this.setState({recipient: '', dateEarned: null, name: '', expiration: null, image: null, formErrors: [], formError: false});
+        this.formLoading(true)
+        const formErrorPredicates = [
+            !this.accountManager.isValidPublicKey(this.state.recipient) ? new Error('Invalid public key for recipient') : null,
+            this.state.name === '' ? new Error('Credential name is required') : null,
+            this.state.dateEarned === null ? new Error('Date earned is required') : null,
+            this.state.expiration && moment().isAfter(this.state.expiration) ? new Error('Cannot issue an expired credential') : null
+        ]
+        const validationResult = isValidForm(formErrorPredicates);
+        if(validationResult.valid) {
+            const retry = await this.props.handle(this.state);
+            if(retry) {
+                this.setState(previousState => {
+                    const {loading, formErrors, formError, ...state} = previousState;
+                    return {...state, loading: false, formErrors: [], formError: false};
+                });
+            } else {
+                this.setState({loading: false, recipient: '', dateEarned: null, name: '', expiration: null, image: null, formErrors: [], formError: false});
+            }
+        } else {
+            this.setState(previousState => {
+                const {loading, formErrors, formError, ...state} = previousState;
+                return {...state, loading: false, formErrors: validationResult.errors, formError: true};
+            });
         }
     }
 
@@ -349,36 +362,11 @@ export class IssueForm extends Component {
         return <Credential full={false} data={{...this.props.demo, issuer: this.accountStore.current.account.publicKey, ...this.state}} />
     }
 
-    isValidForm() {
-        this.setState({formErrors: []})
-        let formErrors = [];
-        return [
-            !this.accountManager.isValidPublicKey(this.state.recipient) ? new Error('Invalid public key for recipient') : null,
-            this.state.name === '' ? new Error('Credential name is required') : null,
-            this.state.dateEarned === null ? new Error('Date earned is required') : null,
-            this.state.expiration && moment().isAfter(this.state.expiration) ? new Error('Cannot issue an expired credential') : null
-        ].filter(error => error !== null)
-        .map(error => {
-            if(error) this.setState({formErrors: [...formErrors, error], formError: true});
-            return error;
-        }).length === 0;
-    }
-
     showNoAccountWarning() {
         return (
             <Message 
                 header='No account detected'
                 content='Could not detect an account, please import or create one using the Accounts tab'
-            />
-        )
-    }
-    showFormErrors() {
-        return (
-            <Message error
-                header='Problems with your input'
-                content={<Message.List items={this.state.formErrors.map((error, i) => {
-                    return <Message.Item key={i} content={error.message} />
-                })} />}
             />
         )
     }
@@ -402,7 +390,7 @@ export class IssueForm extends Component {
                     <Form.Button disabled={this.props.warn || this.state.loading} style={{display: 'flex', alignSelf: 'flex-start'}} color='orange' size='large' content='Upload Image' icon='upload' labelPosition='right' onClick={() => document.getElementById('credentialImageUpload').click()} />
                 </Form.Group>
                 <input type="file" id='credentialImageUpload' onChange={this.uploadImage} style={{display: 'none'}} />  
-                {this.state.formErrors.length > 0 ? this.showFormErrors() : null}
+                {this.state.formErrors.length > 0 ? showFormErrors(this.state.formErrors) : null}
                 {this.props.warn ? this.showNoAccountWarning() : this.getPreview()}
             </Form>
         )

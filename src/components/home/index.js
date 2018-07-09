@@ -72,7 +72,7 @@ export class Home extends Component {
             <Header as='h1' content={this.headers[this.state.active].content} textAlign='center' subheader={this.headers[this.state.active].subheader} />
             <Grid.Row>
                 <Grid.Column width={4} >
-                    <Menu vertical size='huge' fluid>
+                    <Menu disabled={this.accountStore.disableMenu} vertical size='huge' fluid>
                         <Menu.Item icon='key' header name={this.getCurrentAccountHeader()} />
                         <Dropdown text='Switch Account' icon='filter' floating labeled item className='icon'>
                             <Dropdown.Menu>
