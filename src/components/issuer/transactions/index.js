@@ -64,9 +64,14 @@ export class Transactions extends Component {
 
     async loadBadges() {
         this.setState({transactions: []});
-        this.props.accountStore.current.bindTxtUpdates(this.bindTransactionUpdates);
-        await this.props.accountStore.current.loadTransactions();
-        this.setState({loading: false});
+        try {
+            this.props.accountStore.current.bindTxtUpdates(this.bindTransactionUpdates);
+            await this.props.accountStore.current.loadTransactions();
+            this.setState({loading: false}); 
+        } catch (error) {
+            console.log(error);
+            this.setState({loading: false}); 
+        }
     }
 
     async componentDidMount() {

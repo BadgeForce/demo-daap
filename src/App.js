@@ -1,16 +1,17 @@
 import React, { Component } from 'react';
-import { Home } from './components/home';
+import HomepageLayout from './components/home/home.js';
 import { Provider } from 'mobx-react';
 import { default as stores } from './components/stores';
 
-import './App.css';
+import './css/styles.css';
 
 class App extends Component {
   render() {
     return (
+      
       <Provider {...stores}>
         <div className="App">
-          <Home />
+          <HomepageLayout />
         </div>
       </Provider>
     );

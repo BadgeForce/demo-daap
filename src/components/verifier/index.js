@@ -8,7 +8,7 @@ import { Toaster } from '../utils/toaster';
 import QrReader from 'react-qr-reader'
 
 const ipfs = require('../../badgeforcejs-lib/config').Config.testnet.ipfs;
-const logo = require('../../assets/LogoBadgeforce.png');
+const logo = require('../../images/LogoBadgeforce.png');
 const moment = require('moment');
 
 export const animateElem = async (element, animation, times) => {
@@ -298,8 +298,58 @@ export class Verifier extends Component {
 
     render() {
         return (
-            <Grid.Column>
-                {/* {this.state.qrcode ? <div>
+            <Form loading={this.state.loading} size='large' error={this.state.formError ? true : undefined}>
+                <ToastContainer autoClose={5000} />
+                <Form.Field style={styles.verifyForm.inputField} error={this.state.formError ? true : undefined} mobile={4} tablet={12}>
+                    <input style={styles.verifyForm.inputField} value={this.state.recipient} placeholder='Recipient Public Key' onChange={(e, recipient) => this.setState({recipient: recipient.value})}/>
+                </Form.Field>
+                <Form.Field style={styles.verifyForm.inputField} error={this.state.formError ? true : undefined} mobile={4} tablet={12}>
+                    <input style={styles.verifyForm.inputField} value={this.state.name} placeholder='Credential Name' onChange={(e, name) => this.setState({name: name.value})}/>
+                </Form.Field>
+                <Form.Field style={styles.verifyForm.inputField} error={this.state.formError ? true : undefined} mobile={4} tablet={12}>
+                    <input style={styles.verifyForm.inputField} value={this.state.institutionId} placeholder='Institution ID' onChange={(e, institutionId) => this.setState({institutionId: institutionId.value})} />
+                </Form.Field>
+                <Form.Group style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
+                    <Form.Field style={{paddingBottom: 10}}>
+                        <Button.Group fluid>
+                            <Button ref={this.verifyButtonRef} disabled={this.state.loading} style={styles.verifyForm.verifyFromFormButton} onClick={this.handleVerify} content='Verify Using Form' icon='check' labelPosition='left'/>
+                                <Button.Or />
+                            <Button disabled={this.state.loading} style={styles.verifyForm.verifyFromUploadButton} content='Verify Using BFAC File Upload' icon='upload' labelPosition='right' onClick={() => document.getElementById('jsonUpload').click()} />
+                        </Button.Group>
+                    </Form.Field>
+                    {/* <Form.Button disabled={this.state.loading} style={{display: 'flex', alignSelf: 'flex-start'}} color='orange' size='large' content='Verify From QR Code Scan' icon='qrcode' labelPosition='right' onClick={this.showQRScanner} /> */}
+                </Form.Group>
+                {this.state.formErrors.length > 0 ? this.showFormErrors() : null}
+                <input type="file" id="jsonUpload" onChange={this.uploadJSON} style={{display: 'none'}} />  
+            </Form>
+        );
+    }
+}
+
+const styles = {
+    verifyForm: {
+        inputField: {
+            borderTop: 0,
+            borderLeft: 0,
+            borderRight: 0,
+            borderBottomColor: '#337ab7',
+            borderRadius: 0,
+        }, 
+        verifyFromFormButton: {
+            backgroundColor: '#eef1fa',
+            color: '#2f51bf',
+            borderRadius: '50px',
+            borderRight: 0
+        },
+        verifyFromUploadButton: {
+            backgroundColor: '#3e63d7',
+            color: '#fff',
+            borderRadius: '50px',
+            borderLeft: 0
+        }
+    }
+}
+/* {this.state.qrcode ? <div>
                     <Form.Button disabled={this.state.loading} style={{display: 'flex', alignSelf: 'flex-start'}} color='orange' size='large' content='Close' icon='close' labelPosition='right' onClick={() => this.setState({qrcode: false})} />
                         <QrReader
                         ref={this.qrScannerRef}
@@ -310,26 +360,5 @@ export class Verifier extends Component {
                         legacyMode={true}
                     />
                 </div>
-                : null} */}
-                <Grid.Column>
-                    <ToastContainer autoClose={5000} />
-                    <Form loading={this.state.loading} size='large' error={this.state.formError ? true : undefined}>
-                        <Form.Input error={this.state.formError ? true : undefined} value={this.state.recipient}  mobile={4} tablet={12} placeholder='Recipient Public Key' onChange={(e, recipient) => this.setState({recipient: recipient.value})} />
-                        <Form.Input error={this.state.formError ? true : undefined} value={this.state.name}  mobile={4} tablet={12} placeholder='Credential Name' onChange={(e, name) => this.setState({name: name.value})} />
-                        <Form.Input error={this.state.formError ? true : undefined} value={this.state.institutionId}  mobile={4} tablet={12} placeholder='Institution ID' onChange={(e, institutionId) => this.setState({institutionId: institutionId.value})} />
-                        <Form.Group style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
-                            <Form.Field style={{paddingBottom: 10}}>
-                                <Button ref={this.verifyButtonRef} disabled={this.state.loading} style={{display: 'flex', alignSelf: 'flex-start'}} color='blue' onClick={this.handleVerify} size='large' content='verify' icon='check' labelPosition='right'/>
-                            </Form.Field>
-                            {/* <Form.Button disabled={this.state.loading} style={{display: 'flex', alignSelf: 'flex-start'}} color='orange' size='large' content='Verify From QR Code Scan' icon='qrcode' labelPosition='right' onClick={this.showQRScanner} /> */}
-                            <Form.Button disabled={this.state.loading} style={{display: 'flex', alignSelf: 'flex-start'}} color='black' size='large' content='Verify From BFAC File Upload' icon='upload' labelPosition='right' onClick={() => document.getElementById('jsonUpload').click()} />
-                        </Form.Group>
-                        {this.state.formErrors.length > 0 ? this.showFormErrors() : null}
-                        <input type="file" id="jsonUpload" onChange={this.uploadJSON} style={{display: 'none'}} />  
-                    </Form>
-                </Grid.Column>
-                {this.state.results ? this.showResults() : null}
-            </Grid.Column>
-        );
-    }
-}
+                : null} */
+                /* {this.state.results ? this.showResults() : null} */

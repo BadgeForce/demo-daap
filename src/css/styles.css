@@ -1,0 +1,34 @@
+html{
+	font-size: 16px;
+}
+body{
+	font-family: 'Open Sans', sans-serif;
+}
+
+.menu_item_content {
+	color: #337ab7;
+}
+
+.ui.secondary.pointing.menu {
+	border-bottom: none;
+}
+
+.ui.secondary.pointing.menu .active.item {
+	font-weight: bold;
+	color: #337ab7;
+	border-bottom-color: #337ab7;
+}
+
+.content-header {
+	color: #2f51bf;
+    font-weight: 700;
+}
+
+.content-text {
+	color: #5e78cd;
+}
+
+.content-subheader {
+	color: #5e78cd;
+	margin-top: 0;
+}
