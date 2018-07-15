@@ -24,6 +24,11 @@ body{
     font-weight: 700;
 }
 
+.content-header-error {
+	color: #9f3a38;
+    font-weight: 700;
+}
+
 .content-text {
 	color: #5e78cd;
 }

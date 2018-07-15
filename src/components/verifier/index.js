@@ -4,7 +4,8 @@ import { Icon, List, Header, Card, Image, Form, Message, Grid, Transition, Butto
 import  bjs from '../../badgeforcejs-lib'; 
 import { toast, ToastContainer } from "react-toastify";
 import { Toaster } from '../utils/toaster';
-
+import { ThemeContext } from '../home/home';
+import { styles } from '../common-styles';
 import QrReader from 'react-qr-reader'
 
 const ipfs = require('../../badgeforcejs-lib/config').Config.testnet.ipfs;
@@ -146,6 +147,7 @@ export class Verifier extends Component {
 
         this.badgeforceVerifier = new bjs.BadgeforceVerifier(this.handleStatusUpdate);
 
+        console.log(this.props)
     }
 
     async handleStatusUpdate(data) {
@@ -300,25 +302,21 @@ export class Verifier extends Component {
         return (
             <Form loading={this.state.loading} size='large' error={this.state.formError ? true : undefined}>
                 <ToastContainer autoClose={5000} />
-                <Form.Field style={styles.verifyForm.inputField} error={this.state.formError ? true : undefined} mobile={4} tablet={12}>
-                    <input style={styles.verifyForm.inputField} value={this.state.recipient} placeholder='Recipient Public Key' onChange={(e, recipient) => this.setState({recipient: recipient.value})}/>
+                <Form.Field style={styles.inputField} error={this.state.formError ? true : undefined} mobile={4} tablet={12}>
+                    <input style={styles.inputField} value={this.state.recipient} placeholder='Recipient Public Key' onChange={(e, recipient) => this.setState({recipient: recipient.value})}/>
                 </Form.Field>
-                <Form.Field style={styles.verifyForm.inputField} error={this.state.formError ? true : undefined} mobile={4} tablet={12}>
-                    <input style={styles.verifyForm.inputField} value={this.state.name} placeholder='Credential Name' onChange={(e, name) => this.setState({name: name.value})}/>
+                <Form.Field style={styles.inputField} error={this.state.formError ? true : undefined} mobile={4} tablet={12}>
+                    <input style={styles.inputField} value={this.state.name} placeholder='Credential Name' onChange={(e, name) => this.setState({name: name.value})}/>
                 </Form.Field>
-                <Form.Field style={styles.verifyForm.inputField} error={this.state.formError ? true : undefined} mobile={4} tablet={12}>
-                    <input style={styles.verifyForm.inputField} value={this.state.institutionId} placeholder='Institution ID' onChange={(e, institutionId) => this.setState({institutionId: institutionId.value})} />
+                <Form.Field style={styles.inputField} error={this.state.formError ? true : undefined} mobile={4} tablet={12}>
+                    <input style={styles.inputField} value={this.state.institutionId} placeholder='Institution ID' onChange={(e, institutionId) => this.setState({institutionId: institutionId.value})} />
                 </Form.Field>
-                <Form.Group style={{display: 'flex', flexDirection: 'row', justifyContent: 'space-between'}}>
-                    <Form.Field style={{paddingBottom: 10}}>
-                        <Button.Group fluid>
-                            <Button ref={this.verifyButtonRef} disabled={this.state.loading} style={styles.verifyForm.verifyFromFormButton} onClick={this.handleVerify} content='Verify Using Form' icon='check' labelPosition='left'/>
-                                <Button.Or />
-                            <Button disabled={this.state.loading} style={styles.verifyForm.verifyFromUploadButton} content='Verify Using BFAC File Upload' icon='upload' labelPosition='right' onClick={() => document.getElementById('jsonUpload').click()} />
-                        </Button.Group>
-                    </Form.Field>
+                <Button.Group vertical={this.props.mobile ? true : false } fluid>
+                    <Button size='small' ref={this.verifyButtonRef} disabled={this.state.loading} style={styles.buttonLight} onClick={this.handleVerify} content='Verify Using Form' icon='check' labelPosition='left'/>
+                    <Button.Or />
+                    <Button size='small' disabled={this.state.loading} style={styles.buttonDark} content='Verify Using BFAC File Upload' icon='upload' labelPosition='right' onClick={() => document.getElementById('jsonUpload').click()} />
+                </Button.Group>
                     {/* <Form.Button disabled={this.state.loading} style={{display: 'flex', alignSelf: 'flex-start'}} color='orange' size='large' content='Verify From QR Code Scan' icon='qrcode' labelPosition='right' onClick={this.showQRScanner} /> */}
-                </Form.Group>
                 {this.state.formErrors.length > 0 ? this.showFormErrors() : null}
                 <input type="file" id="jsonUpload" onChange={this.uploadJSON} style={{display: 'none'}} />  
             </Form>
@@ -326,28 +324,12 @@ export class Verifier extends Component {
     }
 }
 
-const styles = {
-    verifyForm: {
-        inputField: {
-            borderTop: 0,
-            borderLeft: 0,
-            borderRight: 0,
-            borderBottomColor: '#337ab7',
-            borderRadius: 0,
-        }, 
-        verifyFromFormButton: {
-            backgroundColor: '#eef1fa',
-            color: '#2f51bf',
-            borderRadius: '50px',
-            borderRight: 0
-        },
-        verifyFromUploadButton: {
-            backgroundColor: '#3e63d7',
-            color: '#fff',
-            borderRadius: '50px',
-            borderLeft: 0
-        }
-    }
+export const VerifierComponent = (props) => {
+    return (
+        <ThemeContext.Consumer>
+            {theme => <Verifier mobile={theme} />}
+        </ThemeContext.Consumer>
+    )
 }
 /* {this.state.qrcode ? <div>
                     <Form.Button disabled={this.state.loading} style={{display: 'flex', alignSelf: 'flex-start'}} color='orange' size='large' content='Close' icon='close' labelPosition='right' onClick={() => this.setState({qrcode: false})} />
