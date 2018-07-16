@@ -8,7 +8,7 @@ const localforage = require('localforage');
 export class AccountStore { 
   @observable accounts;
   @observable current; 
-  @observable disableMenu = false;
+  @observable loadingCache = false;
   accountDeviceStore = localforage.createInstance({name: "badgeforce-accounts"});
 
   batchStatusWorker = new BatchStatusWatcher();
@@ -21,12 +21,10 @@ export class AccountStore {
 
   switchAccount(publicKey) {
     try {
-      this.disableMenu = true;
       const account = this.findAccount(publicKey);
       if(account) {
         this.current = account;
       }
-      this.disableMenu = false;
     } catch (error) {
       throw error; 
     }
@@ -34,12 +32,14 @@ export class AccountStore {
 
   async newAccount(issuer) {
     try {
-        this.disableMenu = true;
+        this.loadingCache = true;
         if(!this.findAccount(issuer.account.publicKey)) {
-          await this.accountDeviceStore.setItem(issuer.account.publicKey, issuer.account.signer._privateKey.asHex());  
+          const privateKeyHex = issuer.account.signer._privateKey.asHex();
+          const data = issuer.account.name ? `${issuer.account.name}-${privateKeyHex}` : privateKeyHex;
+          await this.accountDeviceStore.setItem(issuer.account.publicKey, data);  
           this.accounts.push(issuer);      
         }
-        this.disableMenu = false;
+        this.loadingCache = false;
     } catch (error) {
       throw new Error(error);
     }
@@ -47,7 +47,7 @@ export class AccountStore {
   
   async getCache() {
     try {
-      this.disableMenu = true;
+      this.loadingCache = true;
       const keys = await this.accountDeviceStore.keys();
       const accountCache = await Promise.all(keys.map(async (key, i) => {
         const priv = await this.accountDeviceStore.getItem(key);
@@ -55,15 +55,17 @@ export class AccountStore {
       }));
 
       accountCache.forEach( account => {
+        if(!this.findAccount(account.publicKey))
         this.accounts.push(new Account(account));
       });
       
       if(this.accounts.length > 0) {
-        this.disableMenu = false;
         this.current = this.accounts[0];
+        this.loadingCache = false;
         return false;
       }
-      this.disableMenu = false;
+
+      this.loadingCache = false;
       return true;
     } catch (error) {
       throw error;

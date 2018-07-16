@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
-import { Route, Redirect } from 'react-router-dom'
+import { Route } from 'react-router-dom'
 import {observer, inject} from 'mobx-react';
 import { toast } from "react-toastify";
 import { Toaster } from '../utils/toaster';
-import { Form, Segment, Grid, Item, Header, Message } from 'semantic-ui-react'
+import { Form, Segment, Grid, Item, Header, Message, Dimmer, Loader } from 'semantic-ui-react'
 import { styles } from '../common-styles';
 import Icon from 'semantic-ui-react/dist/commonjs/elements/Icon/Icon';
 
@@ -18,6 +18,14 @@ export class AccountAuth extends Component {
 
     noAccountDetected(props) {
         return this.props.accountStore.current === null;
+    }
+
+    renderLoading() {
+        return (
+            <Dimmer active inverted>
+                <Loader inverted>Loading</Loader>
+            </Dimmer>
+        );
     }
 
     showRedirectButton(props) {
@@ -49,6 +57,8 @@ export class AccountAuth extends Component {
 
     render() {
         const { component: Component, ...rest } = this.props;
-        return <Route  {...rest} render={ props => this.noAccountDetected() ? this.showRedirectButton(props) : <Component {...props} /> }  />
+        return (
+            !this.props.accountStore.loadingCache ? <Route  {...rest} render={ props => this.noAccountDetected() ? this.showRedirectButton(props) : <Component {...props} /> }  />: this.renderLoading()
+        );
     }
 }

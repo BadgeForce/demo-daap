@@ -2,9 +2,7 @@ const retry = require('async/retry');
 const {createHash} = require('crypto');
 const secp256k1 = require('secp256k1');
 const {AcademicCredential, Core, StorageHash, Issuance} = require('../protobufs-js/browser/credentials/compiled').issuer_pb;
-const config = require('./config').Config;
-console.log(config.testnet)
-
+const config = require('./config').ChainRestConfig;
 
 export class Results {
     constructor(statusCB) {
@@ -28,35 +26,74 @@ export class Results {
 }
 
 export class RestClient {
-    stateURI = config.testnet.state;
-    ipfsURI = config.testnet.ipfs;
+    stateURI = config.state;
+    ipfsURI = config.ipfs;
     async queryIPFS(hash) {
         try {
             const uri = `${this.ipfsURI}/${hash}`;
-            const init = {method: 'GET', headers: {'Content-Type': 'application/json'}};
-            const response = await window.fetch(new Request(uri, init));
+            const opts = {times: 3};
+            const method = async (callback) => {
+                try {
+                    const response = await window.fetch(new Request(uri, {method: 'GET', headers: {'Content-Type': 'application/json'}}));
+                    response.status > 300 ? callback(new Error(response.statusText)): callback(null, response) ;
+                } catch (error) {
+                    callback(error)
+                }
+            }
+            
+            const response = await this.retry(opts, method);
             return await response.json();
         } catch (error) {
-            throw new Error(error);
+            throw error;
         }
     }
 
     async queryState(address) {
         try {
             const uri = `${this.stateURI}?address=${address}`;
-            const init = {method: 'GET', headers: {'Content-Type': 'application/json'}};
-            const response = await window.fetch(new Request(uri, init));
+            const opts = {times: 3};
+            const method = async (callback) => {
+                try {
+                    const response = await window.fetch(new Request(uri, {method: 'GET', headers: {'Content-Type': 'application/json'}}));
+                    response.status > 300 ? callback(new Error(response.statusText)): callback(null, response) ;
+                } catch (error) {
+                    callback(error)
+                }
+            }
+            const response = await this.retry(opts, method);
             return await response.json();
         } catch (error) {
-            throw new Error(error);
+            throw error;
         }
     }
 
-    async retry(errorFilter, times, method, args, done) {
-        const opts = {errorFilter, times};
-        console.log(args);
-        const retryMethod = (retrycb) => method(...args, retrycb);
-        retry(opts, retryMethod, done);
+    async queryBatchStatus(link) {
+        try {
+            const opts = {times: 10};
+            const method = async (callback) => {
+                try {
+                    const response = await window.fetch(new Request(link, {method: 'GET', headers: {'Content-Type': 'application/json'}}));
+                    response.status > 300 ? callback(new Error(response.statusText)): callback(null, response) ;
+                } catch (error) {
+                    callback(error)
+                }
+            }
+
+            const response = await this.retry(opts, method);
+            return (await response.json()).data[0].status
+        } catch (error) {
+            throw error;
+        }
+    }
+
+    async retry(opts, method) {
+        return new Promise((resolve, reject) => {
+            retry(opts, method, (err, results) => {
+                console.log(err, results);
+                resolve(results);
+                reject(err);
+            });
+        });
     }
 }
 

@@ -1,12 +1,16 @@
 import React, { Component } from 'react';
-import { Grid, Confirm, Input, Tab, Menu, Button, Dimmer, Loader, Modal, Header, Icon } from 'semantic-ui-react'
 import  { AccountManager } from '../../badgeforcejs-lib/account_manager';
 import { Issuer as Account } from '../../badgeforcejs-lib/issuer';
 import { toast, ToastContainer } from "react-toastify";
+import TextTruncate from 'react-text-truncate';
 import {observer, inject} from 'mobx-react';
 import { sleep } from '../verifier';
 import { Toaster } from '../utils/toaster';
 import { AccountOptions } from './accout-forms';
+import { styles } from '../common-styles';
+import { 
+    Grid, Confirm, Input, Item, Menu, Button, 
+    Dimmer, Loader, Modal, Header, Icon, Dropdown, Popup } from 'semantic-ui-react'
 import 'animate.css/animate.min.css';
 
 const moment = require('moment');
@@ -124,7 +128,7 @@ export default class Accounts extends Component {
 
     async createAccount(password, name) {
         try {
-            const account = new Account(this.accountManager.newAccount(password));
+            const account = new Account(this.accountManager.newAccount(password, name));
             await this.accountStore.newAccount(account);
             this.accountStore.switchAccount(account.account.publicKey);
             // if(!isMobile()) {
@@ -310,6 +314,103 @@ export default class Accounts extends Component {
                     null
                 }
             </Grid.Column>
+        );
+    }
+}
+
+@inject('accountStore')
+@inject('badgeStore')
+@observer
+export class AccountNavMenuItem extends Component {
+    constructor(props) {
+        super(props);
+        this.state = { open: false, options: [], loading: false }
+        this.getActive = this.getActive.bind(this);
+        this.setActive = this.setActive.bind(this);
+        this.getOption = this.getOption.bind(this);
+    }
+
+    // OPTIONS EXAMPLE:  [ { key: 'Arabic', text: 'Arabic', value: 'Arabic' }, ...  ]
+    async componentDidMount() {
+        if(!this.props.accountStore.loadingCache && this.props.accountStore.current === null) {
+            this.setState({loading: true})
+            await this.props.accountStore.getCache();
+            await sleep(1);
+            this.setState({loading: false})
+        } 
+    }
+    
+    isReady() {
+        return !this.state.loading && !this.props.accountStore.loadingCache;
+    }
+
+    setActive(e, {value}) {
+        this.props.accountStore.switchAccount(value);
+    }
+
+    getActive() {
+        const { account } = this.props.accountStore.current || {account: null};
+        const text = account ? `Active: ${account.name || account.publicKey}` : 'No accounts found';
+        return (
+            <TextTruncate
+                line={2}
+                truncateText="…"
+                text={text}
+                textTruncateChild={<a href='' onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById('__accountPopup__').click()
+                }} >more</a>}
+            />
+        );
+    }
+
+    getOption({account: {name, publicKey}}) {
+        return { key: publicKey, text: name || publicKey, value: publicKey }
+    }
+
+    getPopUp() {
+        const { account } = this.props.accountStore.current || {account: null};
+        console.log(this.props)
+        return (
+            <Popup 
+                trigger={<a id="__accountPopup__" />} 
+                hideOnScroll 
+                content={account ? account.publicKey : ''} 
+                on='click'
+                position='top center'
+            />
+        );
+    }
+
+    render() {
+        return (
+            <Menu.Menu as={Menu.Item} style={styles.navMenuHeader}>
+                <Item.Header>
+                    <Header style={styles.navMenuHeader} as={'h4'}>
+                        <Header.Content>
+                            {this.isReady() ? this.getPopUp() : null}
+                            {this.isReady() ? this.getActive() : 'Loading Accounts'}
+                        </Header.Content>
+                    </Header>
+                </Item.Header>
+                <Dropdown
+                    style={{backgroundColor: styles.buttonLight.backgroundColor}}
+                    loading={this.state.loading || this.props.accountStore.loadingCache}
+                    scrolling
+                    autoComplete='on'
+                    inline
+                    button
+                    className='icon accounts-dropdown'
+                    floating
+                    labeled
+                    icon='user'
+                    options={this.props.accountStore.accounts.map(this.getOption)}
+                    onChange={this.setActive}
+                    search
+                    text='Select Account'
+                    header={<Header icon='key' content='Search by account name or public key' />}
+                />
+            </Menu.Menu>
         );
     }
 }

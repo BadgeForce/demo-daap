@@ -9,5 +9,16 @@
                 "statuses": "/batch_statuses"
             }
         }
+    }, 
+    "development": {
+        "base": "http://localhost:8008",
+        "routes": {
+            "state": "/state", 
+            "ipfs": "/ipfs", 
+            "batches": {
+                "submit": "/batches",
+                "statuses": "/batch_statuses"
+            }
+        }
     }
 }

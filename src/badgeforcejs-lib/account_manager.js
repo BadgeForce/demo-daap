@@ -6,11 +6,12 @@ const { BadgeForceBase } = require('./badgeforce_base');
 const context = createContext('secp256k1');
 
 class BadgeForceAccount {
-    constructor(encryptedAccount) {
-        this.downloadStr = JSON.stringify(encryptedAccount);
+    constructor(encryptedAccount, name) {
+        this.downloadStr = encryptedAccount ? JSON.stringify(encryptedAccount) : null;
         this.account = encryptedAccount;
         this.signer = null;
         this.publicKey = null;
+        this.name = name;
     }
 }
 
@@ -46,12 +47,12 @@ export class AccountManager extends BadgeForceBase {
         }
     }
 
-    newAccount(password) {
+    newAccount(password, name) {
         try {
             const keys = this.newAccessKeyPair(password);
             const signer = new CryptoFactory(context).newSigner(context.newRandomPrivateKey());
-            const str = JSON.stringify({publicKey: signer.getPublicKey().asHex(), privateKey: signer._privateKey.asHex()});
-            const account = new BadgeForceAccount({account: cryptico.encrypt(str, keys.pub, keys.priv).cipher});
+            const str = JSON.stringify({publicKey: signer.getPublicKey().asHex(), privateKey: signer._privateKey.asHex(), name: name});
+            const account = new BadgeForceAccount({account: cryptico.encrypt(str, keys.pub, keys.priv).cipher}, name);
             account.signer = signer;
             account.publicKey = signer.getPublicKey().asHex();
             return account;
@@ -72,17 +73,20 @@ export class AccountManager extends BadgeForceBase {
             const decrypted = JSON.parse(plaintext);
             account.signer = new CryptoFactory(context).newSigner(new Secp256k1PrivateKey(Buffer.from(decrypted.privateKey, 'hex')));
             account.publicKey = account.signer.getPublicKey().asHex();
-
+            account.name = decrypted.name || null;
             return account;
         } catch (error) {
             throw new Error(error.message);
         }
     }
 
-    static fromRaw(privateKey) {
-        const account = new BadgeForceAccount({});
+    static fromRaw(data) {
+        const accountData = data.split('-');
+        const {name, privateKey} = accountData.length > 1 ? {name: accountData[0], privateKey: accountData[1]} : {privateKey: accountData[0]};
+        const account = new BadgeForceAccount();
         account.signer = new CryptoFactory(context).newSigner(new Secp256k1PrivateKey(Buffer.from(privateKey, 'hex')));
         account.publicKey = account.signer.getPublicKey().asHex();
+        account.name = name;
         return account;
     }
     

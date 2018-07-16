@@ -1,12 +1,17 @@
 import React, { Component } from 'react';
-import { List, Header, Image, Grid, Button, Dimmer, Loader } from 'semantic-ui-react'
+import { List, Header, Image, Grid, Button, Dimmer, Loader, Popup } from 'semantic-ui-react'
 import { Credential, sleep } from '../verifier';
 import { ProtoDecoder } from '../../badgeforcejs-lib/badgeforce_base' 
 import {observer, inject } from 'mobx-react';
 import { reaction } from 'mobx';
 import { Toaster } from '../utils/toaster';
 import { toast, ToastContainer } from 'react-toastify';
-const logo = require('../../assets/LogoBadgeforce.png');
+import { ThemeContext } from '../home/home';
+import { styles } from '../common-styles';
+import TextTruncate from 'react-text-truncate';
+
+
+import logo from '../../images/LogoBadgeforce.png';
 const QRCode = require('qrcode.react');
 
 const moment = require('moment');
@@ -162,7 +167,7 @@ export class Badges extends Component {
         const key = this.state.key || this.state.badges[0].key;
         if(badge && key) {
             return (
-                <div>
+                <div style={{marginTop: 10}}>
                     <Credential full={true} data={badge.coreInfo} signature={badge.signature} ipfs={key}/>
                     {/* <QRCode id='qrcode' size={160} style={{height: 'auto', width: 'auto'}} value={qrCodeVal} /> */}
                     <Button style={{display: 'flex', alignSelf: 'flex-start'}} color='blue' onClick={this.downloadQRC} size='large' content='download credential file' icon='download' labelPosition='right'/>
@@ -172,32 +177,55 @@ export class Badges extends Component {
             return null
         }
     }
-    noBadges() {
-        const message = this.state.errorLoadingBadges.toggle ? this.state.errorLoadingBadges.message : 'No Badges Found For This Account';
-        return(
-            <Grid.Row>
-                <Grid.Column computer={12} mobile={4} tablet={12}>
-                    <Header style={{display: 'flex', alignItems: 'center'}} as='h1' content={message} textAlign='center' /> 
-                </Grid.Column> 
-            </Grid.Row>
+
+    truncate(data, id) {
+        console.log(data)
+        return (
+            <TextTruncate
+                line={1}
+                truncateText="…"
+                text={data}
+                textTruncateChild={<a href='' onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById(id).click()
+                }} >more</a>}
+            />
+        );
+    }
+
+    getPopUp(key, id) {
+        return (
+            <Popup content={key} trigger={<a id={id} />} hideOnScroll on='click' position='top center' />
+        );
+    }
+    renderHeader() {
+        const content = this.state.errorLoadingBadges.toggle ? this.state.errorLoadingBadges.message : 'No Badges Found For This Account';
+        return (
+            <Header.Content className='content-header'>
+                {this.getPopUp(content, 'header-public-key')}
+                {this.truncate(content, 'header-public-key')}
+            </Header.Content>
         );
     }
     render() {
         return (
             <Grid.Column>
                 <ToastContainer autoClose={5000} />
-                <Dimmer active={this.state.loading.toggle}>
-                    <Loader indeterminate>{this.state.loading.message}</Loader>
-                </Dimmer>
-                <Grid.Row style={{display: 'flex', paddingBottom: 40, justifyContent: 'flex-end'}}>
-                    <Button style={{display: 'flex', alignSelf: 'flex-start'}} circular color='grey' onClick={this.refresh} size='large' icon='refresh'/>
+                <Loader active={this.state.loading.toggle} indeterminate>{this.state.loading.message}</Loader>
+                <Grid.Row style={{display: 'flex', flexDirection: 'row', justifyContent: 'flex-end'}}>
+                    <Button circular color='grey' onClick={this.refresh} size='large' icon='refresh'/>
                 </Grid.Row>
-                <Grid columns={2} centered container stackable>
-                    {!this.state.loading.toggle ? 
-                        this.state.badges.length > 0 ? this.renderBadges() : this.noBadges() : null
-                    }    
-                </Grid>
+                {this.state.badges.length === 0 ? <Header style={styles.navMenuHeader} content={!this.state.loading.toggle && this.state.badges.length === 0 ? this.renderHeader() : null} as='h4' /> : null} 
+                {!this.state.loading.toggle && this.state.badges.length > 0 ? this.renderBadges() : null}    
             </Grid.Column>
         )
     }
+}
+
+export const BadgesComponent = (props) => {
+    return (
+        <ThemeContext.Consumer>
+            {theme => <Badges mobile={theme} />}
+        </ThemeContext.Consumer>
+    )
 }

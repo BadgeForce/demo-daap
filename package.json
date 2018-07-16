@@ -69,6 +69,7 @@
     "react-router-dom": "^4.3.1",
     "react-router-native": "^4.3.0",
     "react-scripts": "^1.1.4",
+    "react-text-truncate": "^0.13.1",
     "react-toastify": "^4.0.1",
     "resolve": "1.6.0",
     "retry": "^0.12.0",
@@ -132,7 +133,23 @@
   "eslintConfig": {
     "extends": "react-app",
     "rules": {
-      "no-restricted-globals": 0
+      "no-restricted-globals": 0,
+      "jsx-a11y/anchor-is-valid": "off",
+      "jsx-a11y/href-no-hash": "off"
+    }
+  }, 
+  "proxy": {
+    "/ipfs": {
+      "target": "http://localhost:8080"
+    }, 
+    "/state": {
+      "target": "http://localhost:8008"
+    }, 
+    "/batches": {
+      "target": "http://localhost:8008"
+    }, 
+    "/batch_statuses": {
+      "target": "http://localhost:8008"
     }
   }
 }

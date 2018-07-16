@@ -1,4 +1,6 @@
 
+import { RestClient } from './badgeforce_base';
+
 export class MetaData {
     constructor(action, description, date, meta){
         this.action = action; 
@@ -18,8 +20,9 @@ export class Batch {
     }
 }
 
-export class Watcher {
+export class Watcher extends RestClient {
     constructor(id, transaction, commited) {
+        super();
         this.transaction = transaction;
         this.commited = commited;
         this.link = transaction.link;
@@ -45,8 +48,7 @@ export class Watcher {
 
     async poll() {
         try {
-            const response = await window.fetch(new Request(this.link, {method: 'GET', headers: {'Content-Type': 'application/json'}}));
-            this.transaction.status = (await response.json()).data[0].status;
+            this.transaction.status = await this.queryBatchStatus(this.link);
         } catch (error) {
             throw new Error(error);
         }

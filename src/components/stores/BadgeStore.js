@@ -47,7 +47,7 @@ export class BadgeStore extends ProtoDecoder {
         try {
             const res = await this.queryState(this.address);
             let { data } = res;
-
+            if(!data || data.length === 0) throw new Error('404')
             await Promise.all(data.map(async i => {
                 const hash = this.decodeStorageHash(Buffer.from(i.data, 'base64'));
                 const degree = await this.getDegreeCore(hash.hash);
@@ -57,7 +57,13 @@ export class BadgeStore extends ProtoDecoder {
             if(done) done(this.cache, null);
         } catch (error) {
             console.log(error);
-            if(done) done(this.cache, new Error('Could not load badges, click refresh button to try again'));
+            if(done) {
+                if(error.message === '404') {
+                    done(this.cache, new Error(`No Badges Found For This Account ${this.account}`));
+                } else {
+                    done(this.cache, new Error('Could not load badges, click refresh button to try again'));
+                }
+            }
         }
     }
 

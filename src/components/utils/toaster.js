@@ -3,7 +3,7 @@ import { toast } from "react-toastify";
 export class Toaster {
      
     static notify(message, type) {
-        const id = toast(message, { autoClose: 15000, type, position: toast.POSITION.TOP_RIGHT });
+        const id = toast(message, { autoClose: 15000, type, position: toast.POSITION.TOP_LEFT });
         return id;
     }
 

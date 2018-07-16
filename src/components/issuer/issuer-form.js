@@ -5,11 +5,10 @@ import DatePicker from 'react-datepicker';
 import { Toaster } from '../utils/toaster';
 import { toast } from "react-toastify";
 import {observer, inject} from 'mobx-react';
-import { Credential, sleep } from '../verifier';
+import { Credential } from '../verifier';
 import { styles } from '../common-styles';
 import { isValidForm, showFormErrors } from '../utils/form-utils';
 import 'react-datepicker/dist/react-datepicker.css';
-import HeaderContent from 'semantic-ui-react/dist/commonjs/elements/Header/HeaderContent';
 
 const moment = require('moment');
 
@@ -20,7 +19,7 @@ export class RevokeForm extends Component {
         this.accountManager = new AccountManager();
     }
     handleRevoke = async() => {
-        this.formLoading(true);
+        this.setState({loading: true});
         const formErrorPredicates = [
             !this.accountManager.isValidPublicKey(this.state.recipient) ? new Error('Invalid public key for recipient') : null,
             this.state.credentialName === '' ? new Error('Credential name is required') : null
@@ -49,13 +48,13 @@ export class RevokeForm extends Component {
         return (
             <Form loading={this.state.loading} size='large' style={{paddingTop: 25}} error={this.state.formError ? true : undefined}>
                 <Form.Field error={this.state.formError ? true : undefined}>
-                    <input style={styles.inputField} value={this.state.recipient} placeholder='Recipient Public Key' onChange={(e, recipient) => this.setState({recipient: recipient.value})} />
+                    <input style={styles.inputField} value={this.state.recipient} placeholder='Recipient Public Key' onChange={(e) => this.setState({recipient: e.target.value})} />
                 </Form.Field>
                 <Form.Field error={this.state.formError ? true : undefined}>
-                    <input style={styles.inputField} value={this.state.credentialName}  placeholder='Credential Name' onChange={(e, credentialName) => this.setState({credentialName: credentialName.value})} />
+                    <input style={styles.inputField} value={this.state.credentialName}  placeholder='Credential Name' onChange={(e) => this.setState({credentialName: e.target.value})} />
                 </Form.Field>
                 <Form.Field value={this.state.institutionId}>
-                    <input style={styles.inputField} disabled placeholder={this.state.institutionId} onChange={(e, institutionId) => this.setState({institutionId: institutionId.value})} />
+                    <input style={styles.inputField} disabled placeholder={this.state.institutionId} onChange={(e) => this.setState({institutionId: e.target.value})} />
                 </Form.Field>
                 <Form.Group>
                     <Form.Button disabled={this.state.credentialName === '' || this.state.recipient === ''} style={styles.buttonDark} onClick={this.handleRevoke} size='large' content='Revoke' icon='ban' labelPosition='right'/>
@@ -133,21 +132,21 @@ export class IssueForm extends Component {
 
     revokeInfo = () => {
         return <Header.Content as='h3' className='content-subheader' content={this.revokedescscription} />
-
     }
 
     async handleRevoke(data) {
+        console.log(data)
         this.setState({results: null, visible: false, loading: true});
         try {
-            const watcher = await this.accountStore.current.revoke(data);
+            await this.accountStore.current.revoke(data);
             this.setState(prevState => ({
                 loading: {toggle: false, message: ''},
                 visible: true,
                 toastId: null,
-                transactions: [...prevState.transactions, watcher]
             }));
         } catch (error) {
-            Toaster.notify('Something Went Wrong While Revoking!', toast.TYPE.ERROR);
+            console.log(error);
+            Toaster.notify('Something Went Wrong While Revoking, Double Check Your Data!', toast.TYPE.ERROR);
             this.setState({results: null, visible: false, loading: false});
         }
     }
@@ -165,9 +164,10 @@ export class IssueForm extends Component {
                 image
             }
             await this.accountStore.current.issueAcademic(coreData);
+            return false;
         } catch (error) {
             Toaster.notify(error.message, toast.TYPE.ERROR);
-            throw error;
+            return true;
         }
     }
 
@@ -193,6 +193,7 @@ export class IssueForm extends Component {
 
     handleIssue = async () => {
         this.formLoading(true)
+        console.log(this.state)
         const formErrorPredicates = [
             !this.accountManager.isValidPublicKey(this.state.recipient) ? new Error('Invalid public key for recipient') : null,
             this.state.name === '' ? new Error('Credential name is required') : null,
@@ -222,10 +223,10 @@ export class IssueForm extends Component {
         return (
             <Form loading={this.state.loading} style={{paddingTop: 25}} size='large' error={this.state.formError ? true : undefined}>
                 <Form.Field error={this.state.formError ? true : undefined} value={this.state.recipient} >
-                    <input style={styles.inputField} placeholder='Recipient Public Key' onChange={({value}) => this.setState({recipient: value})} />
+                    <input style={styles.inputField} placeholder='Recipient Public Key' onChange={(e) => this.setState({recipient: e.target.value})} />
                 </Form.Field>
                 <Form.Field error={this.state.formError ? true : undefined} value={this.state.name}>
-                    <input style={styles.inputField}  placeholder='Credential Name' onChange={({value}) => this.setState({name: name.value})} />
+                    <input style={styles.inputField}  placeholder='Credential Name' onChange={(e) => this.setState({name:  e.target.value})} />
                 </Form.Field>
                 <Form.Group widths='equal'>
                     <Form.Field error={this.state.formError ? true : undefined} style={{display: 'flex', alignItems: 'flex-end', justifyContent: 'center'}}>
@@ -257,7 +258,7 @@ export class IssueForm extends Component {
                                 <Item.Header textAlign='left' as={Header}>
                                     <Header.Content as='h1' className='content-header' content={'Issuer'} />
                                 </Item.Header>  
-                                {this.state.value === 'issue' ? <Item.Content as={Credential} full={false} data={{...this.props.demo, issuer: this.props.accountStore.current.account.publicKey, ...this.state}} /> : 
+                                {this.state.value === 'issue' ? <Item.Content as={Credential} full={false} data={{...this.demoCred, issuer: this.props.accountStore.current.account.publicKey, ...this.state}} /> : 
                                     this.revokeInfo()
                                 }
                             </Item>

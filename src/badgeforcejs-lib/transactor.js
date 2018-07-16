@@ -9,7 +9,7 @@ const uuidv4 = require('uuid/v4');
 const protobuf = require('sawtooth-sdk/protobuf');
 const {AcademicCredential, Core, Payload, PayloadAction, AnyData, Revoke } = require('../protobufs-js/browser/credentials/compiled').issuer_pb;
 const google  = require('../protobufs-js/browser/credentials/compiled').google;
-const config = require('./config').Config;
+const config = require('./config').ChainRestConfig;
 
 const FAMILY_NAME = 'badgeforce_issuer';
 const FAMILY_VERSION = '1.0';
@@ -20,7 +20,7 @@ export class Transactor extends BadgeForceBase {
     familyName = 'badgeforce_issuer';
     familyVersion = '1.0';
 
-    batchesURI = config.testnet.batches;
+    batchesURI = config.batches;
 
     newSingleBatch = (inputs, outputs, signer, dependencies, payload) => {
         const transactionHeaderBytes = protobuf.TransactionHeader.encode({
@@ -71,22 +71,32 @@ export class Transactor extends BadgeForceBase {
 
     submitBatch = async (batch) => {
         try {
-            const request = new Request(this.batchesURI, {
-                method: 'POST', 
-                body: JSON.stringify({data: Buffer.from(batch).toString("base64")}),
-                headers: new Headers({'Content-Type': 'application/json'})
-            });
-            const response = await this.parseResponseJSON(await window.fetch(request));
-            if(!response.ok) {
-                console.log(response);
-                throw JSON.stringify(response.json);
-            } 
-
-            return response.json;
+            const opts = {times: 3};
+            const request = this.getRequest(batch); 
+            const method = async (callback) => {
+                try {
+                    const response = await this.parseResponseJSON(await window.fetch(request));
+                    if(!response.ok) {
+                        console.log(response);
+                        throw JSON.stringify(response.json);
+                    } else {
+                        callback(null, response.json);
+                    }
+                } catch (error) {
+                    callback(error)
+                }
+            }
+            return  await this.retry(opts, method);
         } catch (error) {
             console.log(error);
             throw error;
         }
+    }
+
+    getRequest(batch) {
+        const headers = new Headers({'Content-Type': config.development ? 'application/octet-stream' : 'application/json'});
+        const body = config.development ? batch : JSON.stringify({data: Buffer.from(batch).toString("base64")});
+        return new Request(this.batchesURI, {method: 'POST', body, headers});
     }
 
     async parseResponseJSON(response) {

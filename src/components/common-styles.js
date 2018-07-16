@@ -22,5 +22,21 @@ export const styles = {
         backgroundColor: '#eef1fa',
         color: '#2f51bf',
         marginRight: 10,
+    }, 
+    navMenuItem: {
+        color: '#2f51bf',
+    },
+    navMenuHeader: {
+        color: '#2f51bf',
+        display: 'flex',
+        justifyContent: 'center'
+    },
+    segmentBG: {
+        backgroundColor: '#eef1fa',
+        borderBottom: 'none'
+    },
+    navSegmentBody: {
+        backgroundColor: '#eef1fa',
+        height: 'inherit'
     }
 }

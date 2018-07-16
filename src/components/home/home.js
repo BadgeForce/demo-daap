@@ -12,13 +12,18 @@ import {
     Sidebar,
     Visibility,
     Item,
+    Header
 } from 'semantic-ui-react'
 import  wrappers from './wrappers';
 import { AccountAuth } from '../accounts/auth';
+import { AccountNavMenuItem } from '../accounts';
+import { TransactionNavList } from '../transactions';
 import { styles } from '../common-styles';
 import { Switch, Route, Link, withRouter } from 'react-router-dom'
+import { ToastContainer } from "react-toastify";
 import headerimage from '../../images/ourproblem.png';
 import logo from '../../images/LogoBadgeforce.png';
+import 'react-toastify/dist/ReactToastify.css';
 
 /* eslint-disable react/no-multi-comp */
 /* Heads up! HomepageHeading uses inline styling, however it's not the best practice. Use CSS or styled components for
@@ -78,6 +83,9 @@ class TestnetStatus extends Component {
                     </span>
                     <span className='menu_item_content' style={{paddingLeft: 10}}>Operating normally</span>
                 </Menu.Item>
+                <Menu.Item>
+                    <Button circular style={styles.buttonDark} onClick={this.props.toggleSideBar} size='medium' icon='bars' />
+                </Menu.Item>
             </Menu.Menu>
         );
     }
@@ -107,29 +115,11 @@ class DesktopMenu extends Component {
                         </Link>
                     </Menu.Item>
                     <Menu.Item active={this.props.location.pathname === '/badges'}>
-                        <Link onClick={() => this.setActive('accounts')} to='/accounts'>
+                        <Link onClick={() => this.setActive('badges')} to='/badges'>
                             <span className='menu_item_content'><Icon name='shield' />Badges</span>    
                         </Link>
                     </Menu.Item>
-                    <Menu.Menu position='right'>
-                        <Menu.Item>
-                            <Icon name='cubes' color='green'/>
-                            <span className='menu_item_content' >
-                                Network: 
-                            </span>
-                            <span className='menu_item_content' style={{paddingLeft: 10}}>https://testnet.badgeforce.io</span>
-                        </Menu.Item>
-                        <Menu.Item>
-                            <Icon name='heartbeat' color='red'/>
-                            <span className='menu_item_content' >
-                                Status:
-                            </span>
-                            <span className='menu_item_content' style={{paddingLeft: 10}}>Operating normally</span>
-                        </Menu.Item>
-                        <Menu.Item>
-                            <Button circular style={styles.buttonDark} onClick={this.toggle} size='medium' icon='bars' />
-                        </Menu.Item>
-                    </Menu.Menu>
+                    <TestnetStatus {...this.props} />
                 </Container>
                 
         );
@@ -142,7 +132,7 @@ const DesktopMenuWithRouter = withRouter(DesktopMenu)
 
 /* Heads up!
  * Neither Semantic UI nor Semantic UI React offer a responsive navbar, however, it can be implemented easily.
- * It can be more complicated, but you can create really flexible markup.
+ * It can be more complicated, but you can create really flexible markup. fc0dd96593394b5727d68bf21579117db6a9178e1277e25793f80eb4da1e6904
  */
 
 export const ThemeContext = React.createContext('mobile');
@@ -154,7 +144,7 @@ class DesktopContainer extends Component {
     }
     constructor(props) {
         super(props);
-        this.state = {visible: true, active: 'verifier'}
+        this.state = {visible: false, active: 'verifier', fixed: false}
         this.toggle = this.toggle.bind(this);
     }
     toggle() {
@@ -175,23 +165,20 @@ class DesktopContainer extends Component {
                     vertical
                     visible={this.state.visible}
                     width='very wide'
-                >
-                    
-                    {/* <Button circular style={styles.buttonDark} onClick={this.toggle} size='medium' icon='close' /> */}
-                    <Menu.Item as='a' onClick={this.toggle}>
-                        <Icon name='close' />
+                >                    
+                    <Menu.Item style={styles.navMenuHeader} onClick={this.toggle}>
+                        <Item.Header>
+                            <Header style={styles.navMenuHeader} as={'h4'}>
+                                <Icon name='close' />
+                                <Header.Content>
+                                    Close
+                                </Header.Content>
+                            </Header>
+                        </Item.Header>
                     </Menu.Item>
-                    <Menu.Item as='a'>
-                        <Icon name='user' />
-                        Switch Account
-                    </Menu.Item>
+                    <AccountNavMenuItem mobile={this.props.mobile} />
+                    <TransactionNavList />
                 </Sidebar>
-            <Sidebar.Pusher
-                    dimmed={this.state.visible}
-                    onClick={this.toggle}
-                    style={{
-                    minHeight: '100vh'
-            }}>
                 <Responsive {...Responsive.onlyComputer}>
                     <Visibility
                         once={false}
@@ -204,9 +191,7 @@ class DesktopContainer extends Component {
                         }}
                             vertical>
                             <Menu
-                                fixed={fixed
-                                ? 'top'
-                                : null}
+                                fixed={fixed ? 'top': null}
                                 pointing={!fixed}
                                 secondary={!fixed}
                                 borderless={true}
@@ -215,7 +200,7 @@ class DesktopContainer extends Component {
                                 <Menu.Item>
                                     <Image src={logo} />    
                                 </ Menu.Item> 
-                                <DesktopMenuWithRouter />
+                                <DesktopMenuWithRouter toggleSideBar={this.toggle} />
                             </Menu>
                             <HomepageHeading />
                         </Segment>
@@ -224,7 +209,6 @@ class DesktopContainer extends Component {
                         {children}
                     </ThemeContext.Provider>
                 </Responsive>
-                </Sidebar.Pusher>
             </Sidebar.Pushable>
         )
     }
@@ -337,11 +321,13 @@ ResponsiveContainer.propTypes = {
 
 const HomepageLayout = () => (
     <ResponsiveContainer>
+        <ToastContainer />
         <Switch>
             <Route exact path="/" component={wrappers.Verifier}/>
             <Route path="/verifier" component={wrappers.Verifier}/>
             <Route path="/accounts" component={wrappers.Accounts}/>
             <AccountAuth path="/issuer" component={wrappers.Issuer}/>
+            <AccountAuth path="/badges" component={wrappers.Badges}/>
             {/* <Route path="/about" component={About} />
             <Route path="/hello" component={Hello} />
             <Route path="/books" component={Books} /> */}
