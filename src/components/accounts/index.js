@@ -12,6 +12,7 @@ import {
     Grid, Confirm, Input, Item, Menu, Button, 
     Dimmer, Loader, Modal, Header, Icon, Dropdown, Popup } from 'semantic-ui-react'
 import 'animate.css/animate.min.css';
+import Label from 'semantic-ui-react/dist/commonjs/elements/Label/Label';
 
 const moment = require('moment');
 class PasswordConfirm extends Component {
@@ -353,13 +354,18 @@ export class AccountNavMenuItem extends Component {
         const text = account ? `Active: ${account.name || account.publicKey}` : 'No accounts found';
         return (
             <TextTruncate
+                style={{cursor: 'pointer'}}
+                onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById('__accountPopup__').click()
+                }}
                 line={2}
                 truncateText="…"
                 text={text}
-                textTruncateChild={<a href='' onClick={(e) => {
-                    e.preventDefault();
-                    document.getElementById('__accountPopup__').click()
-                }} >more</a>}
+                // textTruncateChild={<a href='' onClick={(e) => {
+                //     e.preventDefault();
+                //     document.getElementById('__accountPopup__').click()
+                // }} >more</a>}
             />
         );
     }
@@ -370,7 +376,6 @@ export class AccountNavMenuItem extends Component {
 
     getPopUp() {
         const { account } = this.props.accountStore.current || {account: null};
-        console.log(this.props)
         return (
             <Popup 
                 trigger={<a id="__accountPopup__" />} 

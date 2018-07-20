@@ -71,7 +71,6 @@ export class TransactionStoreManager extends BadgeForceBase {
       
     async persistTransaction(id, transaction) {
         try {
-            console.log(id, transaction);
             await this.store.setItem(id, transaction); 
         } catch (error) {
             console.log(error);
@@ -85,7 +84,6 @@ export class TransactionStoreManager extends BadgeForceBase {
         if(transaction.status === 'PENDING') {
             this.cache[id].watch();
         }
-        console.log(this.cache);
     }
 
     getTransactionDBKey(id) {

@@ -19,13 +19,12 @@ export class Transaction extends Component {
         this.truncate = this.truncate.bind(this);
         this.getPopUp = this.getPopUp.bind(this);
         this.popupKey = `${this.props.id}-transaction-popup__`
-        console.log(this.popupKey)
     }
 
     truncate(data) {
-        console.log(data)
         return (
             <TextTruncate
+                style={{overflow: 'hidden'}}
                 line={1}
                 truncateText="…"
                 text={data}
@@ -52,7 +51,11 @@ export class Transaction extends Component {
                 <Feed.Content>
                     {this.getPopUp(this.props.transaction.metaData.description)}
                     <Feed.Summary>
-                        <Feed.Event as={'h4'}>{this.truncate(this.props.transaction.metaData.description)}</Feed.Event>
+                        <Feed.Event as={'h6'}>
+                            <Header>
+                                <Header.Content as='div' content={this.truncate(this.props.transaction.metaData.description)} />
+                            </Header>
+                        </Feed.Event>
                         <Feed.Date>{this.props.transaction.metaData.date}</Feed.Date>
                     </Feed.Summary>
                     <Feed.Meta>
@@ -134,9 +137,9 @@ export class Transactions extends Component {
         };
     }
 
-    componentWillUnmount() {
-        this.disposeAccountChange()
-    }
+    // componentWillUnmount() {
+    //     this.disposeAccountChange()
+    // }
 
     renderTransactions() {
         if(this.state.transactions.length > 0) {
@@ -183,6 +186,7 @@ export class TransactionNavList extends Transactions {
         this.toggleLoading = this.toggleLoading.bind(this);
         this.updateCount = this.updateCount.bind(this);
         this.updateTransactions = this.updateTransactions.bind(this);
+        this.renderList = this.renderList.bind(this);
     }
 
     async toggleLoading(loading) {
@@ -197,17 +201,7 @@ export class TransactionNavList extends Transactions {
     updateTransactions(transactions) {
         this.setState({transactions});
     }
-
     renderList() {
-        return (
-            <Segment style={styles.navSegmentBody} secondary>
-                <pre>
-                    
-                </pre>
-            </Segment>
-        );
-    }
-    render() {
         return (
             <Grid.Column style={{height: '100%'}}>
                 <Segment.Group style={{height: '100%'}}>
@@ -235,6 +229,12 @@ export class TransactionNavList extends Transactions {
                     </Segment>
                 </Segment.Group>
             </Grid.Column>
+        );
+    }
+    render() {
+        console.log(this.props.mobile)
+        return (
+            !this.props.mobile ? this.renderList() : null
         );
     }
 }
