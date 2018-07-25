@@ -1,5 +1,6 @@
 import PropTypes from 'prop-types'
 import React, {Component} from 'react'
+import _ from 'lodash'
 import {
     Button,
     Container,
@@ -12,7 +13,7 @@ import {
     Sidebar,
     Visibility,
     Item,
-    Header
+    Header, Rail, Sticky
 } from 'semantic-ui-react'
 import  wrappers from './wrappers';
 import { AccountAuth } from '../accounts/auth';
@@ -30,21 +31,28 @@ import 'react-toastify/dist/ReactToastify.css';
  * such things.
  */
 class HomepageHeading extends Component {
+    constructor(props) {
+        super(props);
+        this.state = {
+            networkURI: 'https://testnet.badgeforce.io',
+            status: 'Operating normally'
+        }
+    }
     render() {
-        const {mobile} = this.props;
+        const {mobile, tablet} = this.props;
         return (
             <Grid container stackable verticalAlign='middle'>
                 <Grid.Row>
-                    <Grid.Column >
+                    <Grid.Column>
                         <Grid.Row>
                             <Item
                                 style={{
                                 display: 'flex',
                                 alignItems: 'center',
-                                flexDirection: mobile
+                                flexDirection: mobile || tablet
                                     ? 'column'
                                     : 'row'
-                            }}>
+                                }}>                  
                                 <Item.Image size='large' src={headerimage}/>
                                 <Item.Content verticalAlign='middle'>
                                     <Item.Header className='content-header' as='h2'>
@@ -61,10 +69,10 @@ class HomepageHeading extends Component {
 }
 
 HomepageHeading.propTypes = {
-    mobile: PropTypes.bool
+    mobile: PropTypes.bool, 
+    tablet: PropTypes.bool
 }
 
-const menutItemsLength = 8;
 const menuItems = (props) => {
     return (
         [<Menu.Item key={'verifier'} active={props.location.pathname === '/verifier'}>
@@ -82,61 +90,88 @@ const menuItems = (props) => {
                 <span className='menu_item_content'><Icon name='user' />Accounts</span>    
             </Link>
         </Menu.Item>,
-        <Menu.Item key={'badges'} active={props.location.pathname === '/badges'}>
+        <Menu.Item link key={'badges'} active={props.location.pathname === '/badges'}>
             <Link to='/badges'>
                 <span className='menu_item_content'><Icon name='shield' />Badges</span>    
             </Link>
-        </Menu.Item>,
-        <TestnetStatus key={'testnetstatus'} {...props} />]
+        </Menu.Item>]
     );
 }
 
 class TestnetStatus extends Component {
     constructor(props) {
         super(props);
-        this.getSideBarButton = this.getSideBarButton.bind(this);
-        this.getChainURI = this.getChainURI.bind(this);
-        this.getHealthStatus = this.getHealthStatus.bind(this);
-        this.desktop = this.desktop.bind(this);
-        this.renderMenu = this.renderMenu.bind(this);
+
+        this.state = { overlayFixed: false, status: 'Operating normally', networkURI:  'https://testnet.badgeforce.io'}
+
         this.defaultItems = [   
-        <Menu.Item key='testnetconn' icon={<Icon name='cubes' color='green' />} content={this.getChainURI()} />,           
-            <Menu.Item key='testnetstatus' content={this.getHealthStatus()} />,
+            <Menu.Item key='testnetstatus' icon={<Icon name='heartbeat' color='red'/>} content={this.getHealthStatus()} />,
+            <Menu.Item key='testnetconn' icon={<Icon name='cubes' color='green' />} content={this.getChainURI()} />,           
         ];
     }
-    getSideBarButton() {
-        return (
-            <Menu.Item key='desktopnavbtn'>
-                <Button circular style={styles.buttonDark} onClick={this.props.toggleSideBar} size='medium' icon={this.props.sideBarOpen ? 'close' : 'sidebar'} />
-            </Menu.Item>
-        );
+    stickOverlay = () => this.setState({ overlayFixed: true });
+    unStickOverlay = () => this.setState({ overlayFixed: false });
+    handleOverlayRef = (c) => {
+        console.log(c);
+        const { overlayRect } = this.state
+        if (!overlayRect) {
+            this.setState({ overlayRect: _.pick(c.getBoundingClientRect(), 'height', 'width') })
+        }
     }
-    getChainURI() {
+    getChainURI = () => {
         return (
             <span className='menu_item_content'>
-                Network: https://testnet.badgeforce.io<Icon name='user' />
+                {`Network: ${this.state.networkURI}`}
             </span> 
         )
     }
-    getHealthStatus() {
+    getHealthStatus = () => {
         return (
-            <Item.Content verticalAlign='middle'>
-                <Item.Header className='menu_item_content' content='Status: Operating normally' icon={<Icon name='heartbeat' color='red'/>} />                    
-            </Item.Content>
+            <span className='menu_item_content'>
+                {`Status: ${this.state.status}`}
+            </span> 
         );
     }
-    desktop() {
-        return [...this.defaultItems, this.getSideBarButton()];
-    }
-    renderMenu = (isMobile) => {
-        return isMobile ? this.defaultItems : this.desktop();
+    desktop = () => {
+        const {overlayFixed} = this.state;
+        return (
+            <div>
+                <Visibility
+                    once={false}
+                    onTopPassed={this.stickOverlay}
+                    onTopVisible={this.unStickOverlay}
+                    style={{height: 0, width: 0}} />
+                <div ref={this.handleOverlayRef} style={overlayFixed ? fixedOverlayStyle : overlayStyle}>
+                    <Segment compact style={fixedOverlayMenuStyle}>
+                        <Header as={'h5'}>
+                            <Header.Content 
+                            className='menu_item_content' 
+                            style={{
+                                display: 'flex', 
+                                flexDirection: 'column',
+                                alignItems: 'baseline',
+                            }}>
+                                <Image src={logo} />
+                                <span><Icon name='cubes' color='green' />Network: {this.state.networkURI}</span>
+                                <span><Icon name='heartbeat' color='red'/>Status: {this.state.status}</span>
+                            </Header.Content>
+                        </Header>
+                    </Segment> 
+                </div>
+            </div>
+        );
     }
     render() {
-        return (
-            <ThemeContext.Consumer>
-                {isMobile => this.renderMenu(isMobile)}
-            </ThemeContext.Consumer>
-        );
+        switch (this.props.showStatus) {
+            case 'desktop':
+                return this.desktop();
+            case 'tablet':
+                return this.defaultItems;
+            case 'mobile':
+                return this.defaultItems;
+            default: 
+                return this.desktop();
+        }
     }
 }
 
@@ -145,11 +180,30 @@ class NavbarMenu extends Component {
     setActive(active) {
         this.setState({active});
     }
-    render() {
+    
+    getSideBarBtn = () => {
         return (
-                <Container fluid>
-                    {menuItems({...this.props})}
-                </Container>
+            <Menu.Item key='desktopnavbtn'>
+                <Button circular style={styles.buttonDark} onClick={this.props.toggleSideBar} size='medium' icon={this.props.sideBarOpen ? 'close' : 'sidebar'} />
+            </Menu.Item>
+        );
+    }
+
+    getTestNetStatus = () => {
+        return (
+            <Menu.Item key='tstatus'>
+                <TestnetStatus {...this.props} />
+            </Menu.Item>
+        );
+    }
+
+    render() {
+        const items = menuItems({...this.props});        
+        return (
+            <Container fluid>
+                {items}
+                {!this.props.mobile ? this.getSideBarBtn() : this.getTestNetStatus()}
+            </Container>
         );
     }
 }
@@ -171,69 +225,62 @@ class DefaultContainer extends Component {
     }
     constructor(props) {
         super(props);
-        this.state = {visible: false, active: 'verifier', fixed: false}
+        this.state = {
+            visible: false,
+            menuFixed: false
+        }
         this.toggle = this.toggle.bind(this);
     }
-    toggle() {
-        this.setState({visible: !this.state.visible})
-    }
-    hideFixedMenu = () => this.setState({fixed: false})
-    showFixedMenu = () => this.setState({fixed: true})
+    toggle = () => this.setState({visible: !this.state.visible});
+    stickTopMenu = () => this.setState({ menuFixed: true });
+    unStickTopMenu = () => this.setState({ menuFixed: false });
+    
     render() {
         const {children} = this.props
-        const {fixed} = this.state
-        console.log("YOOO", this.props.desktop)
+        const { menuFixed } = this.state
         return (
             <Responsive {...this.props.desktop ? Responsive.onlyComputer : Responsive.onlyTablet}>
                 <Visibility
-                    once={false}
-                    onBottomPassed={this.showFixedMenu}
-                    onBottomPassedReverse={this.hideFixedMenu}>
-                    <Segment
-                        textAlign='center'
-                        style={{padding: '1em 0em', height: '100vh'}}
-                        vertical>
-                        <Menu
-                            fluid widths='7'
-                            fixed={fixed ? 'top': null}
-                            pointing={!fixed}
-                            secondary={!fixed}
-                            borderless={true}
-                            style={{boxShadow: this.state.fixed ? '0px 3px 5px rgba(62,99,215,0.2)' : 'none'}}
-                            size='large'>
-                            <Menu.Item>
-                                <Image src={logo} />    
-                            </ Menu.Item> 
-                            <ThemeContext.Provider value={this.props.mobile}>      
-                                <NavbarMenuWithRouter testnetStatusPosition='right' sideBarOpen={this.state.visible} toggleSideBar={this.toggle} />
-                            </ThemeContext.Provider>      
-                        </Menu>
-                        <Sidebar.Pushable>
-                            <Sidebar
-                                className='customized-scrollbar'
-                                style={{overflowX: 'hidden', height: 'inherit'}}
-                                as={Menu}
-                                animation='push'
-                                direction='right'
-                                icon='labeled'
-                                vertical
-                                visible={this.state.visible}
-                                width='wide'
-                            >             
-                                <ThemeContext.Provider value={this.props.mobile}>       
-                                    <AccountNavMenuItem />
-                                    <TransactionNavList />
-                                </ThemeContext.Provider>
-                            </Sidebar>
-                            <Sidebar.Pusher>
-                                <HomepageHeading />
-                                <ThemeContext.Provider value={this.props.mobile}>
-                                    {children}
-                                </ThemeContext.Provider>
-                            </Sidebar.Pusher>
-                        </Sidebar.Pushable>
-                    </Segment>
+                    onBottomPassed={this.stickTopMenu}
+                    onBottomVisible={this.unStickTopMenu}
+                    once={false}>
+                    <Menu
+                        fluid widths='5'
+                        borderless
+                        fixed={menuFixed ? 'top' : null}
+                        style={menuFixed ? fixedMenuStyle : menuStyle}
+                        size='huge'> 
+                        <ThemeContext.Provider value={this.props.mobile}>      
+                            <NavbarMenuWithRouter {...this.props} sideBarOpen={this.state.visible} toggleSideBar={this.toggle} />
+                        </ThemeContext.Provider>     
+                    </Menu>
                 </Visibility>
+                <TestnetStatus showStatus={this.props.showStatus}/>
+                <Sidebar.Pushable>
+                    <Sidebar
+                        className='customized-scrollbar'
+                        style={{overflowX: 'hidden', boxShadow: 'none', border: 'none'}}
+                        as={Menu}
+                        animation='overlay'
+                        direction='right'
+                        icon='labeled'
+                        vertical
+                        visible={this.state.visible}
+                        width='wide'>             
+                        <ThemeContext.Provider value={this.props.mobile}>       
+                            <AccountNavMenuItem />
+                            <TransactionNavList />
+                        </ThemeContext.Provider>
+                    </Sidebar>
+                    <Sidebar.Pusher>
+                        <div>
+                            <HomepageHeading />
+                            <ThemeContext.Provider value={this.props.mobile || this.props.tablet}>                                    
+                                {children}
+                            </ThemeContext.Provider>
+                        </div>
+                    </Sidebar.Pusher>
+                </Sidebar.Pushable>
             </Responsive>
         )
     }
@@ -268,16 +315,13 @@ class MobileContainer extends Component {
                         animation='push'
                         inverted
                         vertical
+                        style={{overflowX: 'hidden', height: 'inherit'}}
                         visible={sidebarOpened}
                     >
-                            <NavbarMenuWithRouter testnetStatusPosition='right' sideBarOpen={this.state.visible} toggleSideBar={this.toggle} />
+                            <NavbarMenuWithRouter {...this.props} testnetStatusPosition='right' sideBarOpen={this.state.visible} toggleSideBar={this.toggle} />
                     </Sidebar>
 
-                    <Sidebar.Pusher
-                        onClick={this.handlePusherClick}
-                        style={{
-                        minHeight: '100vh'
-                    }}>
+                    <Sidebar.Pusher onClick={this.handlePusherClick}>
                         <Segment
                             textAlign='center'
                             style={{
@@ -311,13 +355,13 @@ MobileContainer.propTypes = {
 
 const ResponsiveContainer = ({children}) => (
     <div>
-        <DefaultContainer desktop={true}>
+        <DefaultContainer showStatus={'desktop'} desktop={true}>
             {children}
         </DefaultContainer>
-        <DefaultContainer desktop={false}>
+        <DefaultContainer showStatus={'tablet'} tablet desktop={false}>
             {children}
         </DefaultContainer>
-        <MobileContainer>
+        <MobileContainer mobile showStatus={'mobile'}>
             {children}
         </MobileContainer>
     </div>
@@ -336,11 +380,43 @@ const HomepageLayout = () => (
             <Route path="/accounts" component={wrappers.Accounts}/>
             <AccountAuth path="/issuer" component={wrappers.Issuer}/>
             <AccountAuth path="/badges" component={wrappers.Badges}/>
-            {/* <Route path="/about" component={About} />
-            <Route path="/hello" component={Hello} />
-            <Route path="/books" component={Books} /> */}
         </Switch>
     </ResponsiveContainer>
 )
+
+const menuStyle = {
+    fontWeight: 'bold',
+    color: '#337ab7',
+    border: 'none',
+    borderRadius: 0,
+    boxShadow: 'none',
+    transition: 'box-shadow .5s ease, padding .5s ease',
+}
+
+const fixedMenuStyle = {
+    border: '1px solid #ddd',
+    boxShadow: '0px 3px 5px rgba(62,99,215,0.2)',
+    transition: 'box-shadow .5s ease',
+}
+
+const overlayStyle = {
+    height: 0,
+    left: 20,
+    margin: '0em 3em 1em 0em',
+}
+
+const fixedOverlayStyle = {
+    ...overlayStyle,
+    position: 'fixed',
+    top: '40px',
+    zIndex: 10,
+}
+
+const fixedOverlayMenuStyle = {
+    ...overlayStyle,
+    position: 'relative',
+    right: 0,
+    top: '40px',
+}
 
 export default HomepageLayout

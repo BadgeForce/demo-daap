@@ -204,8 +204,8 @@ export class TransactionNavList extends Transactions {
     renderList() {
         return (
             <Grid.Column style={{height: '100%'}}>
-                <Segment.Group style={{height: '100%'}}>
-                    <Segment>
+                <Segment.Group style={{border: 'none', boxShadow: 'none'}}>
+                    <Segment style={{border: 'none'}}>
                         <Header style={styles.navMenuHeader} as={'h4'}>
                             {this.state.loading ? <Icon loading name='spinner' /> : null }
                             <Header.Content>
@@ -214,7 +214,7 @@ export class TransactionNavList extends Transactions {
                             </Header.Content>
                         </Header>
                     </Segment>
-                    <Segment style={styles.navSegmentBody} secondary>
+                    <Segment style={{backgroundColor: 'inherit', border: 'none'}} secondary>
                         <Feed>
                             {this.state.transactions.map((transaction, i) => {
                                 return (

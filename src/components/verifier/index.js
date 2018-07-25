@@ -190,7 +190,7 @@ export class Verifier extends Component {
         this.qrScannerRef = React.createRef();
 
         this.badgeforceVerifier = new bjs.BadgeforceVerifier(this.handleStatusUpdate);
-
+        
         console.log(this.props)
     }
 
@@ -283,7 +283,7 @@ export class Verifier extends Component {
                     institutionId: '',
                     toastId: null,
                     formError: false,
-                    formErrora: [],
+                    formErrors: [],
                     loading: false,
                     visible: true,
                 });
@@ -291,14 +291,11 @@ export class Verifier extends Component {
                 console.log(error);
                 Toaster.update(this.state.toastId, error.message, toast.TYPE.ERROR);
                 this.setState({
-                    recipient: '', 
-                    name: '', 
-                    institutionId: '',
                     results: null,
                     toastId: null,
                     loading: false,
                     formError: false,
-                    formErrora: [],
+                    formErrors: [],
                 });
             }
         }        
@@ -374,7 +371,7 @@ export class Verifier extends Component {
                 <Form.Field style={styles.inputField} error={this.state.formError ? true : undefined} value={this.state.institutionId}>
                     <input style={styles.inputField} placeholder='Institution ID' onChange={(e) => this.setState({institutionId: e.target.value})} />
                 </Form.Field>
-                <Button.Group vertical={this.props.mobile ? true : false } fluid>
+                <Button.Group vertical={this.props.mobile || this.props.tablet ? true : false } fluid>
                     <Button size='small' ref={this.verifyButtonRef} disabled={this.state.loading} style={styles.buttonLight} onClick={this.handleVerify} content='Verify Using Form' icon='check' labelPosition='left'/>
                     <Button.Or />
                     <Button size='small' disabled={this.state.loading} style={styles.buttonDark} content='Verify Using BFAC File Upload' icon='upload' labelPosition='right' onClick={() => document.getElementById('jsonUpload').click()} />

@@ -36,7 +36,7 @@ export const styles = {
         borderBottom: 'none'
     },
     navSegmentBody: {
-        backgroundColor: '#eef1fa',
-        height: 'inherit'
+        backgroundColor: '#fff',
+        height: '100%'
     }
 }

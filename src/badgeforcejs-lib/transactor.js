@@ -3,6 +3,7 @@
 
 import * as namespacing from './namespacing';
 import { BadgeForceBase } from './badgeforce_base';
+import { BadgeForceSignature } from './signature';
 
 const {createHash} = require('crypto');
 const uuidv4 = require('uuid/v4');
@@ -21,6 +22,8 @@ export class Transactor extends BadgeForceBase {
     familyVersion = '1.0';
 
     batchesURI = config.batches;
+
+    signatureContext = BadgeForceSignature.createContext('secp256k1');
 
     newSingleBatch = (inputs, outputs, signer, dependencies, payload) => {
         const transactionHeaderBytes = protobuf.TransactionHeader.encode({
@@ -106,13 +109,30 @@ export class Transactor extends BadgeForceBase {
             ok: response.ok,
             json,
           })));
-        
+    }
+
+    test(coreData, signer) {
+        const core = Core.create(coreData);
+        console.log(core)
+        const signature = this.signatureContext.sign(Core.encode(core).finish(), Buffer.from(signer._privateKey.asHex(), 'hex'));
+        console.log(signature.signature);
+        const d = BadgeForceSignature.decode(signature.toString());
+        console.log(d.signature);
+        const verified = signature.verify(Core.encode(core).finish(), core.issuer);
+        const verified1 = d.verify(Core.encode(core).finish(), core.issuer);
+        console.log(verified);
+        console.log(verified1);
     }
 
     issue = async (coreData, signer) => {    
         try {
             const core = Core.create(coreData);
-            const academicCred = AcademicCredential.create({coreInfo: core, signature: signer.sign(Core.encode(core).finish())});
+            console.log(core)
+            const signature = this.signatureContext.sign(Core.encode(core).finish(), Buffer.from(signer._privateKey.asHex(), 'hex'));
+            const academicCred = AcademicCredential.create({
+                coreInfo: core, 
+                signature: signature.toString()
+            });
             // we are going to wrap this data in google.protobuf.any, to allow for arbitrary data passing in our 1 transaction handler many subhandler scheme 
             const issueAny = google.protobuf.Any.create({
                 type_url: 'github.com/BadgeForce/badgeforce-chain-node/credentials/proto/issuer_pb.AcademicCredential', value: AcademicCredential.encode(academicCred).finish()

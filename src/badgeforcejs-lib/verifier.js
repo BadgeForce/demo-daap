@@ -1,10 +1,9 @@
-import { Buffer } from 'buffer';
 import { BadgeForceBase, Results } from './badgeforce_base';
-const {createHash} = require('crypto');
+import { BadgeForceSignature } from './signature';
 const {Core} = require('../protobufs-js/browser/credentials/compiled').issuer_pb;
 const moment = require('moment');
-const secp256k1 = require('secp256k1')
 const namespacing = require('./namespacing');
+
 export class Verifier extends BadgeForceBase {
     
     constructor(...args) {
@@ -38,7 +37,6 @@ export class Verifier extends BadgeForceBase {
     async performChecks(degree, issuance) {
         const results = new Results(this.statusCB);
         const computedPOI = this.computeIntegrityHash(degree.coreInfo);
-        
         computedPOI !== issuance.proofOfIntegrityHash ?
             await results.update(0, {message: this.errMsgs.proofOfIntegrityHash(computedPOI, issuance.proofOfIntegrityHash.hash), success: false}): 
             await results.update(0, {message: 'Proof of integrity hash, data not tempered with', success: true});
@@ -63,7 +61,7 @@ export class Verifier extends BadgeForceBase {
             await results.update(5, {message: this.errMsgs.revoked(), success: false}):
             await results.update(5, {message: 'Credential not revoked', success: true});
 
-        !this.verifySignature(degree) ?
+        !this.verifySignature(degree.signature, this.transformCoreInfo(degree), degree.coreInfo.issuer) ?
             await results.update(6, {message: this.errMsgs.invalidSignature(degree.signature), success: false}):
             await results.update(6, {message: 'Signature is valid', success: true});
         
@@ -74,12 +72,21 @@ export class Verifier extends BadgeForceBase {
         };
     }
 
-    verifySignature(degree) {
+    transformCoreInfo(degree) {
+        Object.keys(degree.coreInfo).forEach(key => {
+            if(degree.coreInfo[key] === "") {
+                delete degree.coreInfo[key];
+            }
+        });
+        return Core.encode(Core.create(degree.coreInfo)).finish();
+    }
+
+    verifySignature(signature, message, issuer) {
         try {
-            const sigBytes = Buffer.from(degree.signature, 'hex');
-            const dataHash = createHash('sha256').update(Core.encode(degree.coreInfo).finish()).digest();
-            return secp256k1.verify(dataHash, sigBytes, Buffer.from(degree.coreInfo.issuer, 'hex'));
+            const bfsignature = BadgeForceSignature.decode(signature);
+            return bfsignature.verify(message, issuer);
         } catch (error) {
+            console.log(error)
             return false;
         }
     }

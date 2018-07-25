@@ -152,10 +152,10 @@ export class Badges extends Component {
         );
     }
     downloadQRC() {
-        const dataStr = "data:text/json;charset=utf-8," + JSON.stringify({data: ProtoDecoder.encodedQRDegree(this.props.badgeStore.cache[0].badge)});
+        const dataStr = "data:text/json;charset=utf-8," + JSON.stringify({data: ProtoDecoder.encodedQRDegree(this.state.active)});
         const link = document.createElement("a");
         link.href = dataStr;
-        link.download = `badgeforce-credential-${this.props.badgeStore.cache[0].badge.coreInfo.name}.bfac`;
+        link.download = `${this.state.active.coreInfo.name}.bfac`;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);

@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import { Form, Message, Grid, Segment, Item, Header } from 'semantic-ui-react'
 import  { AccountManager } from '../../badgeforcejs-lib/account_manager';
+import  { Transactor } from '../../badgeforcejs-lib/transactor';
 import DatePicker from 'react-datepicker';
 import { Toaster } from '../utils/toaster';
 import { toast } from "react-toastify";
@@ -94,6 +95,8 @@ export class IssueForm extends Component {
         this.renderOptions = this.renderOptions.bind(this);
         this.handleChange = this.handleChange.bind(this);
 
+        this.test = this.test.bind(this);
+
         this.revokedescscription = `With BadgeForce issuers have the power to Revoke credentials on the fly. Revoking a credential will make any subsequent
             verifications fail. You must be the owner of the account that issued the credential in order to Revoke it. Make sure your active account is indeed 
             the account you used when you initially issued the credential.
@@ -151,6 +154,19 @@ export class IssueForm extends Component {
         }
     }
 
+    test() {
+       const coreData = {
+            ...this.demoCred,
+            recipient: this.props.accountStore.current.account.publicKey,
+            dateEarned: moment().unix().toString(),
+            expiration: moment().unix().toString(),
+            issuer: this.accountStore.current.account.publicKey,
+            name: 'test',
+        } 
+        const transactor = new Transactor();
+        transactor.test(coreData, this.accountStore.current.account.signer);
+    }
+    
     async issue(data) {
         try {
             const {recipient, dateEarned, name, expiration, image} = data;
@@ -255,6 +271,7 @@ export class IssueForm extends Component {
                     <Grid.Row >
                         <Grid.Column width={6}>
                             <Item>
+                                <Form.Button size='large' content='TEST' onClick={this.test} />
                                 <Item.Header textAlign='left' as={Header}>
                                     <Header.Content as='h1' className='content-header' content={'Issuer'} />
                                 </Item.Header>  

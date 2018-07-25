@@ -3,7 +3,7 @@ const {createHash} = require('crypto');
 const secp256k1 = require('secp256k1');
 const {AcademicCredential, Core, StorageHash, Issuance} = require('../protobufs-js/browser/credentials/compiled').issuer_pb;
 const config = require('./config').ChainRestConfig;
-
+const cbor = require('cbor');
 export class Results {
     constructor(statusCB) {
         this.default = {message: 'Pending', success: false}
@@ -135,6 +135,13 @@ export class ProtoDecoder extends RestClient {
 
     computeIntegrityHash(coreInfo) {
         return createHash('sha512').update(Core.encode(coreInfo).finish()).digest('hex').toLowerCase();
+    }
+
+    getSigningHash(coreInfo) {
+        const obj = Core.toObject(coreInfo);
+        const encoded = cbor.encode(obj);
+        console.log(obj, encoded);
+        return createHash('sha256').update(encoded).digest('hex');
     }
     
     async getIPFSHash(stateAddress) {
