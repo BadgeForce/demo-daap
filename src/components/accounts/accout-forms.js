@@ -1,7 +1,8 @@
 import React, { Component } from 'react';
-import { Form, Grid } from 'semantic-ui-react'
+import { Form, Grid, Menu } from 'semantic-ui-react'
 import { isValidForm, showFormErrors } from '../utils/form-utils';
 import { styles } from '../common-styles';
+import { AccountNavMenuItem } from './index';
 import 'react-datepicker/dist/react-datepicker.css';
 
 export class NewAccountForm extends Component {
@@ -218,9 +219,12 @@ export class AccountOptions extends Component {
     render() {
         return (
             <Grid.Column>
-                <Form.Group style={{display: 'flex'}} inline>
+                <Menu size='large' borderless style={{boxShadow: 'none', border: 'none'}}>
+                    <AccountNavMenuItem full />
+                </Menu>
+                <Form.Group inline>
                     {this.renderOptions()}
-                </Form.Group>
+                </Form.Group>                    
                 {this.renderSelection()}
             </Grid.Column>
         );

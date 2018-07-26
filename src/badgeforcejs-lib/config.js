@@ -6,7 +6,8 @@ export class Config {
         "ipfs": `${configs.testnet.base}${configs.testnet.routes.ipfs}`,
         "batches": `${configs.testnet.base}${configs.testnet.routes.batches.submit}`,
         "batchStatuses": `${configs.testnet.base}${configs.testnet.routes.batches.statuses}`,
-        "development": false
+        "development": false,
+        "base": configs.testnet.base
     };
 
     static development = {
@@ -14,7 +15,8 @@ export class Config {
         "ipfs": `${configs.development.routes.ipfs}`,
         "batches": `${configs.development.routes.batches.submit}`,
         "batchStatuses": `${configs.development.routes.batches.statuses}`,
-        "development": true 
+        "development": true,
+        "base": configs.development.base
     };
 }
 

@@ -357,7 +357,7 @@ export class AccountNavMenuItem extends Component {
                 style={{cursor: 'pointer'}}
                 onClick={(e) => {
                     e.preventDefault();
-                    document.getElementById('__accountPopup__').click()
+                    document.getElementById(this.props.full ? "full__accountPopup__": "__accountPopup__").click()
                 }}
                 line={2}
                 truncateText="…"
@@ -378,7 +378,7 @@ export class AccountNavMenuItem extends Component {
         const { account } = this.props.accountStore.current || {account: null};
         return (
             <Popup 
-                trigger={<a id="__accountPopup__" />} 
+                trigger={<a id={this.props.full ? "full__accountPopup__": "__accountPopup__"} />} 
                 hideOnScroll 
                 content={account ? account.publicKey : ''} 
                 on='click'
@@ -388,10 +388,11 @@ export class AccountNavMenuItem extends Component {
     }
 
     render() {
+        const styling = this.props.full ? {display: 'flex', justifyContent: 'space-around', width: '100%', color: styles.navMenuHeader.color}: styles.navMenuHeader;
         return (
-            <Menu.Menu as={Menu.Item} style={styles.navMenuHeader}>
+            <Menu.Menu as={Menu.Item} style={styling}>
                 <Item.Header>
-                    <Header style={styles.navMenuHeader} as={'h4'}>
+                    <Header style={styles.navMenuHeader} as={this.props.full ? 'h1': 'h4'}>
                         <Header.Content>
                             {this.isReady() ? this.getPopUp() : null}
                             {this.isReady() ? this.getActive() : 'Loading Accounts'}

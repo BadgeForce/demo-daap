@@ -55,7 +55,6 @@ export class Credential extends Component {
     }
 
     truncate(data, id) {
-        console.log(data)
         return (
             <TextTruncate
                 line={1}
@@ -75,7 +74,6 @@ export class Credential extends Component {
         );
     }
     showFullContent = () => {
-        console.log(this.props.data.image)
         const imageSrc = this.props.data.image || logo;
         return (
             <Card.Content>
@@ -189,9 +187,7 @@ export class Verifier extends Component {
         this.verifyButtonRef = React.createRef();
         this.qrScannerRef = React.createRef();
 
-        this.badgeforceVerifier = new bjs.BadgeforceVerifier(this.handleStatusUpdate);
-        
-        console.log(this.props)
+        this.badgeforceVerifier = new bjs.BadgeforceVerifier(this.handleStatusUpdate);        
     }
 
     async handleStatusUpdate(data) {

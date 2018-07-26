@@ -52,7 +52,7 @@ export class TransactionStoreManager extends BadgeForceBase {
             if(this.updateCallback) {
                 this.updateCallback(this.cache[key]);
             }
-
+            return transaction;
         } catch (error) {
             console.log(error);
             throw new Error("Could not save transaction data in browser storage");
@@ -116,7 +116,7 @@ export class Issuer extends TransactionStoreManager {
         try {
             coreData.issuer = this.account.publicKey;
             const response = await this.transactor.issue(coreData, this.account.signer);
-            await this.newTransaction(new Batch(response.link, new MetaData('ISSUE', `Issued ${coreData.name} credential to ${coreData.recipient}`, moment().toString())), true); 
+            return await this.newTransaction(new Batch(response.link, new MetaData('ISSUE', `Issued ${coreData.name} credential to ${coreData.recipient}`, moment().toString())), true); 
         } catch (error) {
             let message
             try {
@@ -124,7 +124,6 @@ export class Issuer extends TransactionStoreManager {
             } catch (error) {
                 throw new Error("Something's up, please report this error as 'unknown' ");
             }
-            console.log(message);
             switch (message.code) {
                 case 400:
                     throw new Error("Invalid data sent, check configs or retry later");         

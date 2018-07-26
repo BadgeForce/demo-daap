@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Form, Message, Grid, Segment, Item, Header } from 'semantic-ui-react'
+import { Form, Message, Grid, Segment, Item, Header, Button, Popup } from 'semantic-ui-react'
 import  { AccountManager } from '../../badgeforcejs-lib/account_manager';
 import  { Transactor } from '../../badgeforcejs-lib/transactor';
 import DatePicker from 'react-datepicker';
@@ -9,6 +9,7 @@ import {observer, inject} from 'mobx-react';
 import { Credential } from '../verifier';
 import { styles } from '../common-styles';
 import { isValidForm, showFormErrors } from '../utils/form-utils';
+import TextTruncate from 'react-text-truncate';
 import 'react-datepicker/dist/react-datepicker.css';
 
 const moment = require('moment');
@@ -72,14 +73,31 @@ export class RevokeForm extends Component {
 export class IssueForm extends Component {
     constructor(props){
         super(props);
-        this.state = {value: 'issue', recipient: '', dateEarned: null, name: '', image: null, expiration: null, formErrors: [], formError: false, loading: false};
+
+        this.initialState = {
+            value: 'issue', 
+            recipient: '', 
+            dateEarned: null, 
+            name: '', 
+            image: null, 
+            expiration: null, 
+            formErrors: [], 
+            formError: false, 
+            loading: false,
+            issueSuccess: {
+                success: false,
+                transaction: null
+            }
+        };
+
+        this.state = {...this.initialState};
         this.showNoAccountWarning = this.showNoAccountWarning.bind(this);
         this.accountStore = this.props.accountStore;
         this.accountManager = new AccountManager();
 
         this.demoCred = {
             school: 'BadgeForce University',
-            institutionId: 'badgeforce-uni-123456'
+            institutionId: 'bf-edu-123'
         }
 
         this.options = [
@@ -88,12 +106,15 @@ export class IssueForm extends Component {
         ];
 
         this.issue = this.issue.bind(this);
+        this.handleIssue = this.handleIssue.bind(this);
         this.renderIssueForm = this.renderIssueForm.bind(this);
         this.handleRevoke = this.handleRevoke.bind(this);
         this.formLoading = this.formLoading.bind(this);
         this.renderSelection = this.renderSelection.bind(this);
         this.renderOptions = this.renderOptions.bind(this);
         this.handleChange = this.handleChange.bind(this);
+        this.getSuccessMessage = this.getSuccessMessage.bind(this);
+        this.getInfoPopup = this.getInfoPopup.bind(this);
 
         this.test = this.test.bind(this);
 
@@ -179,11 +200,10 @@ export class IssueForm extends Component {
                 name,
                 image
             }
-            await this.accountStore.current.issueAcademic(coreData);
-            return false;
+            const transaction = await this.accountStore.current.issueAcademic(coreData);
+            return {retry: false, transaction};
         } catch (error) {
-            Toaster.notify(error.message, toast.TYPE.ERROR);
-            return true;
+            return {retry: true, error: error};
         }
     }
 
@@ -207,25 +227,28 @@ export class IssueForm extends Component {
         this.setState({loading});
     }
 
-    handleIssue = async () => {
+    async handleIssue() {
         this.formLoading(true)
-        console.log(this.state)
         const formErrorPredicates = [
-            !this.accountManager.isValidPublicKey(this.state.recipient) ? new Error('Invalid public key for recipient') : null,
+            !this.accountManager.isValidPublicKey(this.state.recipient) ? new Error('Public key is empty or invalid') : null,
             this.state.name === '' ? new Error('Credential name is required') : null,
             this.state.dateEarned === null ? new Error('Date earned is required') : null,
             this.state.expiration && moment().isAfter(this.state.expiration) ? new Error('Cannot issue an expired credential') : null
         ]
         const validationResult = isValidForm(formErrorPredicates);
         if(validationResult.valid) {
-            const retry = await this.issue(this.state);
-            if(retry) {
+            const results = await this.issue(this.state);
+            if(results.retry) {
                 this.setState(previousState => {
                     const {loading, formErrors, formError, ...state} = previousState;
-                    return {...state, loading: false, formErrors: [], formError: false};
+                    return {...state, loading: false, formErrors: [results.error], formError: true};
                 });
             } else {
-                this.setState({loading: false, recipient: '', dateEarned: null, name: '', expiration: null, image: null, formErrors: [], formError: false});
+                const {issueSuccess, ...state} = this.initialState;
+                this.setState({...state, issueSuccess: {
+                    success: true,
+                    transaction: results.transaction
+                }});
             }
         } else {
             this.setState(previousState => {
@@ -233,17 +256,68 @@ export class IssueForm extends Component {
                 return {...state, loading: false, formErrors: validationResult.errors, formError: true};
             });
         }
+
+        console.log(this.state);
+    }
+
+    getInfoPopup(info) {
+        const btnStyle = {color: styles.buttonLight.color, backgroundColor: 'inherit'};
+        return (
+            <Popup
+                trigger={<Button size='mini' style={btnStyle} circular icon='question' />}
+                content={info}
+                on='click' 
+                hideOnScroll 
+                position='right center'/>
+        );
+    }
+
+    getSuccessMessage() {
+        return (
+            <span>
+                <Message style={{display: 'flex'}} 
+                    success 
+                    header={'Success'} 
+                    content={
+                            <TextTruncate
+                                style={{overflow: 'hidden'}}
+                                line={1}
+                                truncateText="…"
+                                text={this.state.issueSuccess.transaction.metaData.description}
+                                textTruncateChild={<a href='' onClick={(e) => {
+                                    e.preventDefault();
+                                    document.getElementById('success_info_popup').click()
+                                }} >read more</a>} />
+                        }
+                />
+                <Popup content={this.state.issueSuccess.transaction.metaData.description} trigger={<a id={'success_info_popup'} />} hideOnScroll on='click' position='bottom left' />
+            </span>
+        );
     }
 
     renderIssueForm() {
         return (
             <Form loading={this.state.loading} style={{paddingTop: 25}} size='large' error={this.state.formError ? true : undefined}>
-                <Form.Field error={this.state.formError ? true : undefined} value={this.state.recipient} >
-                    <input style={styles.inputField} placeholder='Recipient Public Key' onChange={(e) => this.setState({recipient: e.target.value})} />
-                </Form.Field>
-                <Form.Field error={this.state.formError ? true : undefined} value={this.state.name}>
-                    <input style={styles.inputField}  placeholder='Credential Name' onChange={(e) => this.setState({name:  e.target.value})} />
-                </Form.Field>
+                <Grid.Row style={{display: 'flex', alignItems: 'center'}}>
+                    <Form.Field style={{width: '100%'}}  error={this.state.formError ? true : undefined} value={this.state.recipient} >
+                        <input style={styles.inputField} value={this.state.recipient} placeholder='Recipient Public Key' onChange={(e) => this.setState({recipient: e.target.value})} />
+                    </Form.Field>
+                    {this.getInfoPopup('This is the public address of the user you want to issue the credential to')}
+                </Grid.Row>
+
+                <Grid.Row style={{display: 'flex', alignItems: 'center'}}>
+                    <Form.Field style={{width: '100%'}} error={this.state.formError ? true : undefined} value={this.state.name}>
+                        <input style={styles.inputField} value={this.state.name} placeholder='Credential Name' onChange={(e) => this.setState({name:  e.target.value})} />
+                    </Form.Field>
+                    {this.getInfoPopup('Enter a name for this credential')}
+                </Grid.Row>
+
+                <Grid.Row style={{display: 'flex', alignItems: 'center'}}>
+                    <Form.Field style={{width: '100%'}}>
+                        <input disabled style={{...styles.inputField, color: '#0000'}}  placeholder={this.demoCred.institutionId} />
+                    </Form.Field>
+                    {this.getInfoPopup('For demo purposes all credentials will be issued using a predefined institution id')}
+                </Grid.Row>
                 <Form.Group widths='equal'>
                     <Form.Field error={this.state.formError ? true : undefined} style={{display: 'flex', alignItems: 'flex-end', justifyContent: 'center'}}>
                         <DatePicker selected={this.state.dateEarned} placeholderText="Date Earned" onChange={(dateEarned) => this.setState({dateEarned})} />
@@ -258,6 +332,7 @@ export class IssueForm extends Component {
                 </Form.Group>
                 <input type="file" id='credentialImageUpload' onChange={this.uploadImage} style={{display: 'none'}} />  
                 {this.state.formErrors.length > 0 ? showFormErrors(this.state.formErrors) : null}
+                {this.state.issueSuccess.success ? this.getSuccessMessage() : null}
             </Form>
         )
     }
@@ -271,7 +346,7 @@ export class IssueForm extends Component {
                     <Grid.Row >
                         <Grid.Column width={6}>
                             <Item>
-                                <Form.Button size='large' content='TEST' onClick={this.test} />
+                                {/* <Form.Button size='large' content='TEST ' onClick={this.test} /> */}
                                 <Item.Header textAlign='left' as={Header}>
                                     <Header.Content as='h1' className='content-header' content={'Issuer'} />
                                 </Item.Header>  

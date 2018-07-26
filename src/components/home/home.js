@@ -13,12 +13,13 @@ import {
     Sidebar,
     Visibility,
     Item,
-    Header, Rail, Sticky
+    Header
 } from 'semantic-ui-react'
 import  wrappers from './wrappers';
 import { AccountAuth } from '../accounts/auth';
 import { AccountNavMenuItem } from '../accounts';
 import { TransactionNavList } from '../transactions';
+import { ChainRestConfig } from '../../badgeforcejs-lib/config';
 import { styles } from '../common-styles';
 import { Switch, Route, Link, withRouter } from 'react-router-dom'
 import { ToastContainer } from "react-toastify";
@@ -102,17 +103,28 @@ class TestnetStatus extends Component {
     constructor(props) {
         super(props);
 
-        this.state = { overlayFixed: false, status: 'Operating normally', networkURI:  'https://testnet.badgeforce.io'}
+        this.state = { 
+            overlayFixed: false, 
+            status: '', 
+            networkURI:  ''
+        }
+
+        this.normal = 'Operating normally';
 
         this.defaultItems = [   
             <Menu.Item key='testnetstatus' icon={<Icon name='heartbeat' color='red'/>} content={this.getHealthStatus()} />,
             <Menu.Item key='testnetconn' icon={<Icon name='cubes' color='green' />} content={this.getChainURI()} />,           
         ];
     }
+    componentDidMount() {
+        this.setState({
+            status: this.normal,
+            networkURI: ChainRestConfig.base
+        })    
+    }
     stickOverlay = () => this.setState({ overlayFixed: true });
     unStickOverlay = () => this.setState({ overlayFixed: false });
     handleOverlayRef = (c) => {
-        console.log(c);
         const { overlayRect } = this.state
         if (!overlayRect) {
             this.setState({ overlayRect: _.pick(c.getBoundingClientRect(), 'height', 'width') })

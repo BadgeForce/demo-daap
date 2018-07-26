@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { List, Header, Image, Grid, Button, Dimmer, Loader, Popup } from 'semantic-ui-react'
+import { List, Header, Menu, Dropdown, Grid, Button, Item, Loader, Popup } from 'semantic-ui-react'
 import { Credential, sleep } from '../verifier';
 import { ProtoDecoder } from '../../badgeforcejs-lib/badgeforce_base' 
 import {observer, inject } from 'mobx-react';
@@ -18,29 +18,41 @@ const moment = require('moment');
 @observer
 export class CompactInfoList extends Component {
     badges = this.props.badges;
-    handleClick = (badge, key) => {
+    state = {active: this.props.badges[0].badge}
+    setActive = (e, {value}) => {
+        const { badge, key } = this.badges.filter( ({ key }) => key === value).shift();
         this.props.setActive(badge, key);
+        this.setState({active: badge});
+    }
+    getOption = (badge, key) =>  {
+        return { key: badge.coreInfo.name, text: badge.coreInfo.name, value: key }
     }
     getList = () => {
-        return this.badges.map((data, i) => {
+        const options = this.badges.map((data, i) => {
             const { badge, key } = data;
-            return (
-                <List.Item onClick={() => this.handleClick(badge, key)} key={i}>
-                    <Image size='tiny' src={badge.coreInfo.image || logo} />
-                    <List.Content>
-                        <List.Header as='a'>{badge.coreInfo.name}</List.Header>
-                        <List.Description>Date Earned: {moment.unix(badge.coreInfo.dateEarned).toString()}</List.Description>
-                    </List.Content>
-                </List.Item>
-            );
+            return this.getOption(badge, key)
         });
+        return (
+            <Grid.Row>
+                <Header>
+                    <Header.Content as='h1' className='content-header' content={this.state.active.coreInfo.name} />
+                </Header>
+                <Dropdown
+                    style={{backgroundColor: styles.buttonLight.backgroundColor}}
+                    scrolling
+                    autoComplete='on'
+                    fluid
+                    options={options}
+                    onChange={this.setActive}
+                    search
+                    selection
+                    placeholder='Search by badge name or issuer public key'
+                />
+            </Grid.Row>
+        );
     }
     render() {   
-        return(
-            <List relaxed celled selection divided>
-                {this.badges.length > 0 ? this.getList() : null}
-            </List>
-        );
+        return this.badges.length > 0 ? this.getList() : null;
     }
 }
 
