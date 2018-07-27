@@ -31,16 +31,41 @@ export const sleep = async (duration) => {
     });
 }
 export class Issuance extends Component {
+    truncate = (data, id) => {
+        return (
+            <TextTruncate
+                line={1}
+                truncateText="…"
+                text={data}
+                textTruncateChild={<a href='' onClick={(e) => {
+                    e.preventDefault();
+                    document.getElementById(id).click()
+                }} >more</a>}
+            />
+        );
+    }
+
+    getPopUp = (data, id) => {
+        return (
+            <Popup content={data} trigger={<a id={id} />} hideOnScroll on='click' position='top center' />
+        );
+    }
     render() {
         return (
-            <Card>
-                <Card.Content header='Issuance' />
-                <Card.Content style={{wordWrap: 'break-word'}}>
-                    Signature: {this.props.data.signature}<br/>
-                    Issuer: {this.props.data.issuerPublicKey}<br/>
-                    Recipient: {this.props.data.recipientPublicKey}<br/>
-                    Revokation Status: {this.props.data.revokationStatus}<br/>
-                    Proof Of Integrity Hash: {this.props.data.proofOfIntegrityHash}<br/>
+            <Card raised style={{width: '100%'}}>
+                <Card.Content as={Header} content='Issuance' style={styles.badge.issuance.header}/>
+                <Card.Content style={styles.badge.issuance.topLevelCard}>
+                    <Card.Description style={styles.badge.issuance.content}>
+                        Signature: {this.truncate(this.props.data.signature, 'issuance_signature')}<br/>
+                        {this.getPopUp(this.props.data.signature, 'issuance_signature')}
+                        Issuer: {this.truncate(this.props.data.issuerPublicKey, 'issuance_issuerPublicKey')}<br/>
+                        {this.getPopUp(this.props.data.issuerPublicKey, 'issuance_issuerPublicKey')}
+                        Recipient: {this.truncate(this.props.data.recipientPublicKey, 'issuance_recipientPublicKey')}<br/>
+                        {this.getPopUp(this.props.data.recipientPublicKey, 'issuance_recipientPublicKey')}
+                        Revokation Status: {this.props.data.revokationStatus}<br/>
+                        Proof Of Integrity Hash: {this.truncate(this.props.data.proofOfIntegrityHash, 'issuance_proofOfIntegrityHash')}<br/>
+                        {this.getPopUp(this.props.data.proofOfIntegrityHash, 'issuance_proofOfIntegrityHash')}
+                    </Card.Description>
                 </Card.Content>
             </Card>
         )
@@ -76,10 +101,10 @@ export class Credential extends Component {
     showFullContent = () => {
         const imageSrc = this.props.data.image || logo;
         return (
-            <Card.Content>
-                <Card.Content style={{wordWrap: 'break-word'}}>
+            <Card.Content style={styles.badge.fullCard.topLevelCard}>
+                <Card.Content style={styles.badge.fullCard.content}>
                     <Image floated='left' size='small' verticalAlign='middle' src={imageSrc} />
-                    <Card.Header>{this.props.data.name}</Card.Header>
+                    <Card.Header >BadgeForce Badge: {this.props.data.name}</Card.Header>
                     <Card.Meta>Date Earned {moment.unix(this.props.data.dateEarned).toString()}</Card.Meta>
                     <Card.Description>
                         School: {this.props.data.school}<br/>

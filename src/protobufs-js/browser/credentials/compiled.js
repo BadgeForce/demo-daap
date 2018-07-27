@@ -650,6 +650,7 @@ $root.issuer_pb = (function() {
          * @property {string|null} [recipientPublicKey] Issuance recipientPublicKey
          * @property {boolean|null} [revokationStatus] Issuance revokationStatus
          * @property {string|null} [proofOfIntegrityHash] Issuance proofOfIntegrityHash
+         * @property {string|null} [storageHash] Issuance storageHash
          */
 
         /**
@@ -708,6 +709,14 @@ $root.issuer_pb = (function() {
         Issuance.prototype.proofOfIntegrityHash = "";
 
         /**
+         * Issuance storageHash.
+         * @member {string} storageHash
+         * @memberof issuer_pb.Issuance
+         * @instance
+         */
+        Issuance.prototype.storageHash = "";
+
+        /**
          * Creates a new Issuance instance using the specified properties.
          * @function create
          * @memberof issuer_pb.Issuance
@@ -741,6 +750,8 @@ $root.issuer_pb = (function() {
                 writer.uint32(/* id 4, wireType 0 =*/32).bool(message.revokationStatus);
             if (message.proofOfIntegrityHash != null && message.hasOwnProperty("proofOfIntegrityHash"))
                 writer.uint32(/* id 5, wireType 2 =*/42).string(message.proofOfIntegrityHash);
+            if (message.storageHash != null && message.hasOwnProperty("storageHash"))
+                writer.uint32(/* id 6, wireType 2 =*/50).string(message.storageHash);
             return writer;
         };
 
@@ -789,6 +800,9 @@ $root.issuer_pb = (function() {
                     break;
                 case 5:
                     message.proofOfIntegrityHash = reader.string();
+                    break;
+                case 6:
+                    message.storageHash = reader.string();
                     break;
                 default:
                     reader.skipType(tag & 7);
@@ -840,6 +854,9 @@ $root.issuer_pb = (function() {
             if (message.proofOfIntegrityHash != null && message.hasOwnProperty("proofOfIntegrityHash"))
                 if (!$util.isString(message.proofOfIntegrityHash))
                     return "proofOfIntegrityHash: string expected";
+            if (message.storageHash != null && message.hasOwnProperty("storageHash"))
+                if (!$util.isString(message.storageHash))
+                    return "storageHash: string expected";
             return null;
         };
 
@@ -865,6 +882,8 @@ $root.issuer_pb = (function() {
                 message.revokationStatus = Boolean(object.revokationStatus);
             if (object.proofOfIntegrityHash != null)
                 message.proofOfIntegrityHash = String(object.proofOfIntegrityHash);
+            if (object.storageHash != null)
+                message.storageHash = String(object.storageHash);
             return message;
         };
 
@@ -887,6 +906,7 @@ $root.issuer_pb = (function() {
                 object.recipientPublicKey = "";
                 object.revokationStatus = false;
                 object.proofOfIntegrityHash = "";
+                object.storageHash = "";
             }
             if (message.signature != null && message.hasOwnProperty("signature"))
                 object.signature = message.signature;
@@ -898,6 +918,8 @@ $root.issuer_pb = (function() {
                 object.revokationStatus = message.revokationStatus;
             if (message.proofOfIntegrityHash != null && message.hasOwnProperty("proofOfIntegrityHash"))
                 object.proofOfIntegrityHash = message.proofOfIntegrityHash;
+            if (message.storageHash != null && message.hasOwnProperty("storageHash"))
+                object.storageHash = message.storageHash;
             return object;
         };
 

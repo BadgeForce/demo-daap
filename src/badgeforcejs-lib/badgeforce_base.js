@@ -4,6 +4,7 @@ const secp256k1 = require('secp256k1');
 const {AcademicCredential, Core, StorageHash, Issuance} = require('../protobufs-js/browser/credentials/compiled').issuer_pb;
 const config = require('./config').ChainRestConfig;
 const cbor = require('cbor');
+
 export class Results {
     constructor(statusCB) {
         this.default = {message: 'Pending', success: false}
@@ -89,7 +90,6 @@ export class RestClient {
     async retry(opts, method) {
         return new Promise((resolve, reject) => {
             retry(opts, method, (err, results) => {
-                console.log(err, results);
                 resolve(results);
                 reject(err);
             });

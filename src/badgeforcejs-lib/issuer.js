@@ -1,13 +1,13 @@
 import { Transactor } from './transactor';
-import { AccountManager } from './account_manager';
 import { Watcher } from './batch_status_watcher';
 const { BadgeForceBase } = require('./badgeforce_base');
-const {Core} = require('../protobufs-js/browser/credentials/compiled').issuer_pb;
 const moment = require('moment');
 const { Batch, MetaData} = require('./batch_status_watcher');
 const namespacing = require('./namespacing');
 const localforage = require('localforage');
 const {createHash} = require('crypto');
+const {Core, StorageHash, Issuance } = require('../protobufs-js/browser/credentials/compiled').issuer_pb;
+
 
 export class TransactionStoreManager extends BadgeForceBase {
     dbKey = 'badgeforce-transactions';
@@ -100,7 +100,52 @@ export class TransactionStoreManager extends BadgeForceBase {
         })
     }
 }
-export class Issuer extends TransactionStoreManager {
+
+export class IssuanceStoreManager extends TransactionStoreManager {
+    namespace = '';
+    issuer = '';
+
+    constructor(publicKey) {
+        super(publicKey);
+        this.issuer = publicKey
+        this.namespace = namespacing.partialLeafAddress(this.issuer, namespacing.ISSUANCE);
+        this.loadIssuances()
+    }
+
+    async loadIssuances() {
+        try {
+            const { data } = await this.queryState(this.namespace);
+            if(data.length === 0) return []
+            const issuances = data.map(issuance => this.decodeIssuance(Buffer.from(issuance.data, 'base64')))
+            const results = await Promise.all(issuances.map(async issuance => await this.recreateBadge(issuance)));
+            console.log(results)
+            return results;
+        } catch (error) {
+            console.log('IssuanceStoreManager:loadIssuances', error);
+            throw new Error('Could not fetch issuances');
+        }
+    }
+
+    async recreateBadge(issuance) {
+        try {
+            const hash = issuance.storageHash;
+            const storageHash = StorageHash.create({hash})
+            const degree = await this.getDegreeCore(storageHash.hash);
+            degree.storageHash = storageHash;
+            return {
+                id: issuance.storageHash,
+                recipient: issuance.recipientPublicKey,
+                badgeName: degree.coreInfo.name,
+                degree,
+                issuance
+            };
+        } catch (error) {
+            console.log('IssuanceStoreManager:recreateBadge', error);
+            throw error;
+        }
+    }
+}
+export class Issuer extends IssuanceStoreManager {
     transactor = new Transactor();
 
     constructor(...args) {

@@ -7,6 +7,7 @@ import { Toaster } from '../utils/toaster';
 import { toast } from "react-toastify";
 import {observer, inject} from 'mobx-react';
 import { Credential } from '../verifier';
+import { IssuancesComponent } from './issuance.js';
 import { styles } from '../common-styles';
 import { isValidForm, showFormErrors } from '../utils/form-utils';
 import TextTruncate from 'react-text-truncate';
@@ -103,6 +104,7 @@ export class IssueForm extends Component {
         this.options = [
             {label: 'Issue a credential', name: 'radioGroup', value: 'issue'},
             {label: 'Revoke a credential', name: 'radioGroup', value: 'revoke'},
+            {label: 'Issued Credential Receipts', name: 'radioGroup', value: 'issuance'},
         ];
 
         this.issue = this.issue.bind(this);
@@ -115,12 +117,22 @@ export class IssueForm extends Component {
         this.handleChange = this.handleChange.bind(this);
         this.getSuccessMessage = this.getSuccessMessage.bind(this);
         this.getInfoPopup = this.getInfoPopup.bind(this);
+        this.renderInfoComponent = this.renderInfoComponent.bind(this);
+        this.issuanceInfo = this.issuanceInfo.bind(this);
 
         this.test = this.test.bind(this);
 
         this.revokedescscription = `With BadgeForce issuers have the power to Revoke credentials on the fly. Revoking a credential will make any subsequent
             verifications fail. You must be the owner of the account that issued the credential in order to Revoke it. Make sure your active account is indeed 
             the account you used when you initially issued the credential.
+        `
+
+        this.issuanceDescription = `In the BadgeForce ecosystem when a credential is issued an Issuance is created and written to the blockchain
+            state. This data will be immutable (it cannot be deleted or modified in anyway), and replicated throughout the entire blockchain network. 
+            An Issuance serves two purposes; It is a pivotal part of the credential verification process because it contains data from a credential created
+            during the origin issuing. It also serves as a receipt record for issuer's, allowing them to look back at their entire issuing history, using the 
+            data inside an Issuance an issuer can recreate any credential they ever issued while at the same time only storing a tiny amount of data on chain
+            keeping our BadgeForce blockchain scalable without sacrificing security.  
         `
     }
 
@@ -149,6 +161,8 @@ export class IssueForm extends Component {
                 return this.renderIssueForm.bind(this).call();
             case 'revoke':
                 return <RevokeForm handle={this.handleRevoke}/>
+            case 'issuance':
+                return <IssuancesComponent />
             default:
                 break;
         }
@@ -156,6 +170,10 @@ export class IssueForm extends Component {
 
     revokeInfo = () => {
         return <Header.Content as='h3' className='content-subheader' content={this.revokedescscription} />
+    }
+
+    issuanceInfo() {
+        return <Header.Content as='h3' className='content-subheader' content={this.issuanceDescription} />
     }
 
     async handleRevoke(data) {
@@ -337,6 +355,24 @@ export class IssueForm extends Component {
         )
     }
 
+    renderInfoComponent() {
+        switch (this.state.value) {
+            case 'issue':
+                return (        
+                    <Item.Content 
+                        as={Credential} 
+                        full={false} 
+                        data={{...this.demoCred, issuer: this.props.accountStore.current.account.publicKey, ...this.state}} />
+                );
+            case 'revoke':
+                return this.revokeInfo();
+            case 'issuance': 
+                return this.issuanceInfo();
+            default:
+                break;
+        }
+    }
+
     render() {
         return (
             <Segment style={{
@@ -348,11 +384,9 @@ export class IssueForm extends Component {
                             <Item>
                                 {/* <Form.Button size='large' content='TEST ' onClick={this.test} /> */}
                                 <Item.Header textAlign='left' as={Header}>
-                                    <Header.Content as='h1' className='content-header' content={'Issuer'} />
+                                    <Header.Content as='h1' className='content-header' content={`${this.state.value.charAt(0).toUpperCase()}${this.state.value.substring(1)}`} />
                                 </Item.Header>  
-                                {this.state.value === 'issue' ? <Item.Content as={Credential} full={false} data={{...this.demoCred, issuer: this.props.accountStore.current.account.publicKey, ...this.state}} /> : 
-                                    this.revokeInfo()
-                                }
+                                {this.renderInfoComponent()}
                             </Item>
                         </Grid.Column>
                         <Grid.Column floated='right' width={8}>

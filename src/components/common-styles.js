@@ -38,5 +38,28 @@ export const styles = {
     navSegmentBody: {
         backgroundColor: '#fff',
         height: '100%'
+    },
+    badge: {
+        fullCard: {
+            topLevelCard: {
+                boxShadow: 'rgba(62, 99, 215, 0.2) 0px 3px 5px',
+                width: '100%'
+            },
+            content: {
+                color: '#2f51bf'
+            }
+        },
+        issuance: {
+            header: {
+                color: '#2f51bf'
+            }, 
+            content: {
+                color: '#2f51bf'
+            },
+            topLevelCard: {
+                width: '100%',
+                boxShadow: 'rgba(62, 99, 215, 0.2) 0px 3px 5px',
+            },
+        }
     }
 }
