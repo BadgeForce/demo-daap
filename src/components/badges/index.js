@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { List, Header, Menu, Dropdown, Grid, Button, Item, Loader, Popup } from 'semantic-ui-react'
+import { Header, Dropdown, Grid, Button, Loader, Popup, Icon } from 'semantic-ui-react'
 import { Credential, sleep } from '../verifier';
 import { ProtoDecoder } from '../../badgeforcejs-lib/badgeforce_base' 
 import {observer, inject } from 'mobx-react';
@@ -9,50 +9,182 @@ import { toast, ToastContainer } from 'react-toastify';
 import { ThemeContext } from '../home/home';
 import { styles } from '../common-styles';
 import TextTruncate from 'react-text-truncate';
+import Slider from "react-slick";
 
+import "slick-carousel/slick/slick.css"; 
+import "slick-carousel/slick/slick-theme.css";
 
-import logo from '../../images/LogoBadgeforce.png';
 const QRCode = require('qrcode.react');
-
 const moment = require('moment');
+const Fuse = require('fuse.js');
+
+function PrevArrow(props) {
+    const { className, style, onClick } = props;
+    return (
+        <div className={className} style={{ ...style}} onClick={onClick}>
+            <Button syle={styles.buttonDarkNoBorder} circular icon='chevron left' onClick={onClick} />
+        </div>
+    );
+}
+
+function NextArrow(props) {
+    const { className, style, onClick } = props;
+    return (
+        <div className={className} style={{ ...style}} onClick={onClick}>
+            <Button syle={styles.buttonDarkNoBorder} circular icon='chevron right' onClick={onClick} />
+        </div>
+    );
+}
+  
+class CustomSlide extends Component {
+    render() {
+        const { index, ...props } = this.props;
+        return (
+            <Grid.Column {...props} style={{padding: 25}}>
+                <Credential 
+                    full={true} 
+                    data={this.props.badge.coreInfo}
+                    degree={this.props.badge}
+                    signature={this.props.badge.signature} 
+                    ipfs={this.props.ipfs}
+                    qrcodeAction={false}
+                    verifyAction
+                    downloadAction
+                    />
+                {/* <QRCode id='qrcode' size={160} style={{height: 'auto', width: 'auto'}} value={qrCodeVal} /> */}
+            </Grid.Column>
+        );
+    }
+  }
+export class BadgeCarousell extends Component {
+    firstSliderSettings = {
+        slidesToShow: 1,
+        slidesToScroll: 1,
+    }
+    constructor(props) {
+        super(props);
+        this.state = {
+          nav1: null,
+          settings: this.firstSliderSettings,
+        };
+    }
+    
+    componentDidMount() {
+        console.log(this.props.badges)
+        const {settings} = this.state;
+        if(!this.props.mobile) {
+            settings['nextArrow'] = <NextArrow />;
+            settings['prevArrow'] = <PrevArrow />;
+        }
+        this.setState({
+            nav1: this.slider1,
+            settings: settings
+        });
+    }
+
+    render() {
+        return (
+            <Slider
+                asNavFor={this.state.nav2}
+                ref={slider => (this.slider1 = slider)}
+                {...this.state.settings}
+            >
+                {this.props.badges.map(({badge, key}, i) => {
+                    console.log(badge, key)
+                    return (
+                        <CustomSlide {...this.props} key={i} index={i} ipfs={key} badge={badge}/>
+                    );
+                })}
+            </Slider>
+        );
+    }
+}
+
 @observer
 export class CompactInfoList extends Component {
+    firstSliderSettings = {
+        slidesToShow: 1,
+        slidesToScroll: 1,
+    }
+    searchOptions = {keys: ['name', 'recipient']}
     badges = this.props.badges;
-    state = {active: this.props.badges[0].badge}
-    setActive = (e, {value}) => {
-        const { badge, key } = this.badges.filter( ({ key }) => key === value).shift();
-        this.props.setActive(badge, key);
-        this.setState({active: badge});
-    }
-    getOption = (badge, key) =>  {
-        return { key: badge.coreInfo.name, text: badge.coreInfo.name, value: key }
-    }
-    getList = () => {
-        const options = this.badges.map((data, i) => {
-            const { badge, key } = data;
-            return this.getOption(badge, key)
+    state = {settings: this.firstSliderSettings, nav1: null}
+
+    componentDidMount() {
+        const {settings} = this.state;
+        if(!this.props.mobile) {
+            settings['nextArrow'] = <NextArrow />;
+            settings['prevArrow'] = <PrevArrow />;
+        }
+        this.setState({
+            nav1: this.slider1,
+            settings: settings
         });
+        console.log(this.slider1)
+        
+    }
+
+    setActive = (e, {value}) => {
+        const index = this.state.nav1.props.children.map(({props}) => props.ipfs === value ? props.index : null).filter(i => i !== null).shift();
+        this.state.nav1.slickGoTo(index);
+    }
+    getOption = (name, recipient, key) =>  {
+        return { text: name, value: key, recipient, name }
+    }
+    search = (options, query) => new Fuse(options, this.searchOptions).search(query);
+    getList = () => {
+        const options = this.badges.map(({ badge, key }, i) => this.getOption(badge.coreInfo.name, badge.coreInfo.recipient, badge.storageHash.hash))
         return (
             <Grid.Row>
-                <Header>
-                    <Header.Content as='h1' className='content-header' content={this.state.active.coreInfo.name} />
-                </Header>
-                <Dropdown
-                    style={{backgroundColor: styles.buttonLight.backgroundColor}}
-                    scrolling
-                    autoComplete='on'
-                    fluid
-                    options={options}
-                    onChange={this.setActive}
-                    search
-                    selection
-                    placeholder='Search by badge name or issuer public key'
-                />
+                <Grid.Row style={{paddingBottom: 10,}}>
+                    <Dropdown
+                        style={{backgroundColor: styles.buttonLight.backgroundColor}}
+                        scrolling
+                        autoComplete='on'
+                        fluid
+                        options={options}
+                        onChange={this.setActive}
+                        search={this.search}
+                        selection
+                        placeholder='Search by badge name or issuer public key'
+                    />
+                </Grid.Row>
             </Grid.Row>
         );
     }
+
+    getSlider = () => {
+        return (
+            <Slider
+                ref={slider => (this.slider1 = slider)}
+                {...this.state.settings}
+            >
+                {this.badges.map(({badge, key}, i) => {
+                    console.log(badge, key)
+                    return (
+                        <CustomSlide {...this.props} key={i} index={i} ipfs={key} badge={badge}/>
+                    );
+                })}
+            </Slider>
+        );
+    }
+
     render() {   
-        return this.badges.length > 0 ? this.getList() : null;
+        if(this.badges.length > 0) {
+            return (
+                <Grid.Row>
+                    <Grid.Column width={4} >
+                        {this.getList()}
+                    </Grid.Column> 
+                    <Grid.Column style={{height: '100vh'}}>
+                        {this.getSlider()}
+                        {this.props.mobile ? <Header.Subheader content='Swipe left or right to see other badges' />: null}
+                    </Grid.Column>
+                </Grid.Row> 
+            )
+        } else {
+            return null;
+        }
     }
 }
 
@@ -76,10 +208,9 @@ export class Badges extends Component {
         this.doneLoading = this.doneLoading.bind(this);
         this.accountMismathch = this.accountMismathch.bind(this);
         this.accountChangeReaction = this.accountChangeReaction.bind(this);
-        this.disposeAccountChange = null;
-        
-
+        this.disposeAccountChange = null;        
     }
+
     doneLoading(newCache, error) {
         this.setState({
             loading: { toggle: false, message: ''}, 
@@ -107,7 +238,7 @@ export class Badges extends Component {
 
         try {
             if(this.accountMismathch()) {
-                this.setState({loading: {toggle: true, message: 'Check for badges on blockchain . . .'}})
+                this.setState({loading: {toggle: true, message: 'Checking for badges on blockchain . . .'}})
                 await sleep(1); 
                 await this.props.badgeStore.setAccount(this.props.accountStore.current, this.doneLoading);
             } else if(this.props.badgeStore.cache.length === 0 ) {
@@ -153,14 +284,7 @@ export class Badges extends Component {
     }
     renderBadges() {
         return (
-            <Grid.Row>
-                <Grid.Column width={4} >
-                    <CompactInfoList badges={this.state.badges} setActive={(active, key) => this.setState({active, key})} />
-                </Grid.Column> 
-                <Grid.Column style={{height: '100vh'}} computer={12} mobile={4} tablet={12}>
-                    {this.renderActive()}
-                </Grid.Column>  
-            </Grid.Row>
+            <CompactInfoList badges={this.state.badges} setActive={(active, key) => this.setState({active, key})} />
         );
     }
     downloadQRC() {
@@ -224,7 +348,7 @@ export class Badges extends Component {
             <Grid.Column>
                 <ToastContainer autoClose={5000} />
                 <Loader active={this.state.loading.toggle} indeterminate>{this.state.loading.message}</Loader>
-                <Grid.Row style={{display: 'flex', flexDirection: 'row', justifyContent: 'flex-end'}}>
+                <Grid.Row style={{display: 'flex', flexDirection: 'row', justifyContent: 'flex-end', marginBottom: 10}}>
                     <Button circular color='grey' onClick={this.refresh} size='large' icon='refresh'/>
                 </Grid.Row>
                 {this.state.badges.length === 0 ? <Header style={styles.navMenuHeader} content={!this.state.loading.toggle && this.state.badges.length === 0 ? this.renderHeader() : null} as='h4' /> : null} 

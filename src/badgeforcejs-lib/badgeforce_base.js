@@ -140,23 +140,28 @@ export class ProtoDecoder extends RestClient {
     getSigningHash(coreInfo) {
         const obj = Core.toObject(coreInfo);
         const encoded = cbor.encode(obj);
-        console.log(obj, encoded);
         return createHash('sha256').update(encoded).digest('hex');
     }
     
     async getIPFSHash(stateAddress) {
         try {
-            const response = await this.queryState(stateAddress);
-            return this.decodeStorageHash(Buffer.from(response.data[0].data, 'base64'));
+            const { data } = await this.queryState(stateAddress);
+            if(data.length === 0) {
+                throw new Error('IPFS Hash not found');
+            }
+            return this.decodeStorageHash(Buffer.from(data[0].data, 'base64'));
         } catch (error) {
-            throw new Error(error);
+            throw error;
         }
     }
 
     async getIssuance(stateAddress) {
         try {
-            const response = await this.queryState(stateAddress);
-            return this.decodeIssuance(Buffer.from(response.data[0].data, 'base64'));
+            const { data } = await this.queryState(stateAddress);
+            if(data.length === 0) {
+                throw new Error('Issuance not found');
+            }
+            return this.decodeIssuance(Buffer.from(data[0].data, 'base64'));
         } catch (error) {
             throw new Error(error);
         }
@@ -164,8 +169,11 @@ export class ProtoDecoder extends RestClient {
 
     async getDegreeCore(hash) {
         try {
-            const response = await this.queryIPFS(hash);
-            return this.decodeDegree(Buffer.from(response.data, 'base64'));
+            const { data } = await this.queryIPFS(hash);
+            if(!data) {
+                throw new Error('IPFS badge data not found');
+            }
+            return this.decodeDegree(Buffer.from(data, 'base64'));
         } catch (error) {
             throw new Error(error);
         }
@@ -265,7 +273,5 @@ export class Importer extends ProtoDecoder {
         this.import([file, fileType, callback], fileType);
     }
 }
-
-
 
 export class BadgeForceBase extends Importer {}

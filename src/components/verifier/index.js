@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import ReactDOM from 'react-dom';
-import { Icon, List, Header, Card, Image, Form, Message, Grid, Transition, Button, Popup, Segment, Item } from 'semantic-ui-react'
+import { Icon, List, Header, Card, Image, Form, Message, Grid, Transition, Button, Popup, Segment, Item, Modal, Loader, Dimmer } from 'semantic-ui-react'
 import  bjs from '../../badgeforcejs-lib'; 
 import { toast, ToastContainer } from "react-toastify";
 import { Toaster } from '../utils/toaster';
@@ -8,10 +8,16 @@ import { ThemeContext } from '../home/home';
 import { styles } from '../common-styles';
 import TextTruncate from 'react-text-truncate';
 import QrReader from 'react-qr-reader'
+import { ErrorBoundary } from '../errors/boundary';
+import PropTypes from 'prop-types';
+import { ProtoDecoder } from '../../badgeforcejs-lib/badgeforce_base' 
+import 'animate.css/animate.min.css';
 
 const ipfs = require('../../badgeforcejs-lib/config').Config.testnet.ipfs;
-const logo = require('../../images/LogoBadgeforce.png');
+const noimage = require('../../images/no-image.png');
 const moment = require('moment');
+
+const DATE_FORMAT = 'dddd, MMMM Do YYYY, h:mm:ss a';
 
 export const animateElem = async (element, animation, times) => {
     const node = ReactDOM.findDOMNode(element);
@@ -45,38 +51,200 @@ export class Issuance extends Component {
         );
     }
 
-    getPopUp = (data, id) => {
+    getPopUp(data, header, id) {
         return (
-            <Popup content={data} trigger={<a id={id} />} hideOnScroll on='click' position='top center' />
+            <Popup trigger={<a id={`__badge__${id}`} />} hideOnScroll on='click' position='top center'>
+                <Popup.Content>
+                    <Message size='large'>
+                        <Message.Header>{header}</Message.Header>
+                        <p style={{wordWrap:'break-word', maxWidth: 800}}>{data}</p>
+                    </Message>
+                </Popup.Content>
+            </Popup>
         );
     }
     render() {
         return (
-            <Card raised style={{width: '100%'}}>
-                <Card.Content as={Header} content='Issuance' style={styles.badge.issuance.header}/>
-                <Card.Content style={styles.badge.issuance.topLevelCard}>
+            <Card raised style={{
+                    boxShadow: `rgba(62, 99, 215, 0.73) 0px 0px 8px`, 
+                    WebkitBoxShadow: `rgba(62, 99, 215, 0.73) 0px 0px 8px`,
+                    border: '1px solid rgb(221, 221, 221)', 
+                    width: '100%'}}>
+                <Card.Header as='h2' style={{
+                    display: 'flex', 
+                    alignItems: 'center',
+                    marginBottom: 0,
+                    justifyContent: 'space-between',
+                    padding: 10}}>
+                     <span style={styles.badge.fullCard.contentHeader}>
+                        Issuance
+                        <Card.Meta style={{fontSize: 'medium', display: 'flex', alignItems: 'center'}}>
+                            Revokation Status: {this.props.data.revokationStatus ? <span style={{color: 'red', marginLeft: 5}}>REVOKED</span>: <span style={{color: 'green', marginLeft: 5}}>Not Revoked</span>}
+                        </Card.Meta>
+                    </span>
+                </Card.Header>
+                <Card.Content>
                     <Card.Description style={styles.badge.issuance.content}>
-                        Signature: {this.truncate(this.props.data.signature, 'issuance_signature')}<br/>
-                        {this.getPopUp(this.props.data.signature, 'issuance_signature')}
-                        Issuer: {this.truncate(this.props.data.issuerPublicKey, 'issuance_issuerPublicKey')}<br/>
-                        {this.getPopUp(this.props.data.issuerPublicKey, 'issuance_issuerPublicKey')}
-                        Recipient: {this.truncate(this.props.data.recipientPublicKey, 'issuance_recipientPublicKey')}<br/>
-                        {this.getPopUp(this.props.data.recipientPublicKey, 'issuance_recipientPublicKey')}
-                        Revokation Status: {this.props.data.revokationStatus}<br/>
-                        Proof Of Integrity Hash: {this.truncate(this.props.data.proofOfIntegrityHash, 'issuance_proofOfIntegrityHash')}<br/>
-                        {this.getPopUp(this.props.data.proofOfIntegrityHash, 'issuance_proofOfIntegrityHash')}
+                        <List>
+                            <List.Item style={{display: 'flex', alignItems: 'baseline'}}>
+                                <span style={{marginRight: 6}}>
+                                    <Header style={styles.badge.fullCard.contentHeader} as='h3' content='Issuer:'/>
+                                </span> {this.truncate(this.props.data.issuerPublicKey, 'issuance_issuerPublicKey')}
+                                {this.getPopUp(this.props.data.issuerPublicKey, 'Public Key of the user who issued this badge', `issuer-${this.props.data.issuerPublicKey}`)}        
+                            </List.Item>
+
+                            <List.Item style={{display: 'flex', alignItems: 'baseline'}}>
+                                <span style={{marginRight: 6}}>
+                                    <Header style={styles.badge.fullCard.contentHeader} as='h3' content='Recipient:'/>
+                                </span> {this.truncate(this.props.data.recipientPublicKey, this.props.data.recipientPublicKey)}
+                                {this.getPopUp(this.props.data.recipientPublicKey, 'Public Key of the user who received this badge', this.props.data.recipientPublicKey)}        
+                            </List.Item>
+
+                            <List.Item style={{display: 'flex', alignItems: 'baseline'}}>
+                                <span style={{marginRight: 6}}>
+                                    <Header style={styles.badge.fullCard.contentHeader} as='h3' content='Signature:'/>
+                                </span> {this.truncate(this.props.data.signature, 'issuance_signature')}
+                                {this.getPopUp(this.props.signature, 'Signature is data that proves a badge was issued by a certain issuer', 'issuance_signature')}      
+                            </List.Item>
+
+                            <List.Item style={{display: 'flex', alignItems: 'baseline'}}>
+                                <span style={{marginRight: 6}}>
+                                    <Header style={styles.badge.fullCard.contentHeader} as='h3' content='Proof Of Integrity Hash:'/>
+                                </span> {this.truncate(this.props.data.proofOfIntegrityHash, 'issuance_proofOfIntegrityHash')}
+                                {this.getPopUp(this.props.proofOfIntegrityHash, 'Proof of integrity hash is the checksum for the badges data, allowing us to check of it was tampered with', 'issuance_proofOfIntegrityHash')}      
+                            </List.Item>
+                        </List>
                     </Card.Description>
                 </Card.Content>
             </Card>
         )
     }
 }
-export class Credential extends Component {
+
+const VerificationResultsModal = (success, header, results, trigger, icon) => (
+    <Modal trigger={trigger} closeIcon>
+        {console.log(results)}
+        <Modal.Header as='h2'>
+            <Icon size='large' {...icon}/>
+            {header}
+        </Modal.Header>
+        <Modal.Content>
+            <Modal.Description>
+            <Header>Results</Header>
+                <List>
+                    {Object.keys(results).map((key, i) => {
+                        const {success, message} = results[key];
+                        return (
+                            <List.Item key={i} >
+                                <List.Header content={key} as='h4'/>
+                                <span style={{color: success ? 'green' : 'red'}}>{message} </span>
+                            </List.Item>
+                        )
+                    })}
+                </List>
+            </Modal.Description>
+        </Modal.Content>
+    </Modal>
+  )
+
+export class CredentialCardActions extends Component {
+    download = (mobile) => {
+        return <Button 
+                disabled={this.props.loading}
+                style={styles.buttonLightNoBorder} 
+                onClick={this.props.download.callback}
+                content={!mobile ? 'download credential file' : null}
+                icon='download' 
+                labelPosition='left'/> 
+    }
+
+    qrCode = (mobile) => {
+        return <Button 
+                disabled={this.props.loading} 
+                style={styles.buttonLightNoBorder}
+                content={!mobile ? 'show qrcode' : null} />
+    }
+
+    verify = (mobile) => {
+        return <Button 
+                disabled={this.props.loading} 
+                onClick={this.props.verify.callback} 
+                style={styles.buttonDarkNoBorder}
+                icon='check'
+                content={!mobile ? 'verify' : null} />
+    }
+
+    getActions(mobile) {
+        console.log(mobile)
+        return (
+            <Button.Group size='medium' attached='top' icon={mobile}>
+                {this.props.qrcode.enabled ? this.qrCode(mobile) : null}
+                {this.props.download.enabled ? this.download(mobile) : null}
+                {this.props.verify.enabled ? this.verify(mobile) : null}
+            </Button.Group>
+        );
+    }
+
+    render() {
+        return this.getActions(this.props.mobile)
+    }
+}
+
+const actionOptions = {enabled: PropTypes.bool.isRequired, callback: PropTypes.func.isRequired};
+
+CredentialCardActions.propTypes = {
+    mobile: PropTypes.bool,
+    loading: PropTypes.bool,
+    verify: PropTypes.shape(actionOptions),
+    qrcode: PropTypes.shape(actionOptions),
+    download: PropTypes.shape(actionOptions),
+}
+export class CredentialComponent extends Component {
+    verifying = 'rgba(62, 99, 215, 0.73)';
+    errorVerifying = 'rgba(255, 0, 18, 0.82)';
+    successVerifying = 'rgb(25, 152, 61)';
+    verifyIcons = {
+        success: {
+            as: () => {
+                return VerificationResultsModal(false, 
+                    'Verification Successful: Badge data is valid. Below are the results', 
+                    this.state.results.all, 
+                    <Button icon='check circle outline' inverted circular color='green' content='verification results' />, {name:'check circle outline', color:'green'})
+            }
+        },
+        error: {
+            as: () => {
+                return VerificationResultsModal(false, 
+                    'Verification Failure: Badge data is invalid. Below are the results', 
+                    this.state.results.all, 
+                    <Button icon='ban' color='red' inverted circular content='verification results' />, {name:'ban', color:'red'})
+            }
+        },
+        warning: {color: 'red', name: 'warning'},
+        loading: {loading: true, color: 'blue', name: 'spinner'}
+    }
+
+    initialState = {
+        inProgress: false,
+        results: {all: [], errors: [], data: []}, //this.props.verifyResults, //
+        icon: this.verifyIcons.warning,
+    }
+
+    componentDidMount() {
+        const { verified, verificationData } = this.props;
+        if(verified && verificationData) {
+            this.handleVerifyResults(verificationData);
+        }
+    }
+
     constructor(props) {
         super(props);
+        this.state = this.initialState;
         this.ipfsURI = `${ipfs}/${this.props.ipfs}`
         this.truncate = this.truncate.bind(this);
         this.getPopUp = this.getPopUp.bind(this);
+        this.verify = this.verify.bind(this);
+        this.badgeforceVerifier = new bjs.BadgeforceVerifier((data) => {});
     }
 
     truncate(data, id) {
@@ -87,64 +255,230 @@ export class Credential extends Component {
                 text={data}
                 textTruncateChild={<a href='' onClick={(e) => {
                     e.preventDefault();
-                    document.getElementById(id).click()
+                    document.getElementById(`__badge__${id}`).click()
                 }} >more</a>}
             />
         );
     }
 
-    getPopUp(data, id) {
+    getPopUp(data, header, id) {
         return (
-            <Popup content={data} trigger={<a id={id} />} hideOnScroll on='click' position='top center' />
+            <Popup trigger={<a id={`__badge__${id}`} />} hideOnScroll on='click' position='top center'>
+                <Popup.Content>
+                    <Message size='large'>
+                        <Message.Header>{header}</Message.Header>
+                        <p style={{wordWrap:'break-word', maxWidth: 800}}>{data}</p>
+                    </Message>
+                </Popup.Content>
+            </Popup>
         );
     }
-    showFullContent = () => {
-        const imageSrc = this.props.data.image || logo;
+    
+    async verify() {
+        this.setState({inProgress: true, icon: this.verifyIcons.loading});
+        await sleep(2);
+        try {
+            const { recipient, name, institutionId } = this.props.data;
+            const data = await this.badgeforceVerifier.verifyAcademic(recipient, name, institutionId);
+            this.handleVerifyResults(data);
+        } catch (error) {
+            console.log(error);
+            this.setState({inProgress: false, verified: true, icon: this.verifyIcons.warning});
+            Toaster.notify('Could not verify at this time, try again later', toast.TYPE.ERROR);
+        }
+    }
+
+    handleVerifyResults = async (data) => {
+        const errors = Object.values(data.results).filter(result  => !result.success);
+        const update = {inProgress: false, verified: true, results: this.initialState.results}
+        update.results.all = data.results;
+        if(errors.length > 0) {
+            update.results.errors = errors.map(error => error.message);
+            update.icon = this.verifyIcons.error
+            this.setState(update);
+        } else {
+            update.results.data = Object.values(data.results).map(({ message }) => message)
+            update.icon = this.verifyIcons.success
+            this.setState(update);
+        }
+    }
+
+    downloadQRC = () => {
+        const dataStr = "data:text/json;charset=utf-8," + JSON.stringify({data: ProtoDecoder.encodedQRDegree(this.props.data)});
+        const link = document.createElement("a");
+        link.href = dataStr;
+        link.download = `${this.props.data.name}.bfac`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    verifyBtn = () => {
         return (
-            <Card.Content style={styles.badge.fullCard.topLevelCard}>
-                <Card.Content style={styles.badge.fullCard.content}>
-                    <Image floated='left' size='small' verticalAlign='middle' src={imageSrc} />
-                    <Card.Header >BadgeForce Badge: {this.props.data.name}</Card.Header>
-                    <Card.Meta>Date Earned {moment.unix(this.props.data.dateEarned).toString()}</Card.Meta>
-                    <Card.Description>
-                        School: {this.props.data.school}<br/>
-                        Institution ID: {this.props.data.institutionId}<br/>
-                        {this.getPopUp(this.props.data.issuer, this.props.data.issuer)}
-                        Issuer: {this.truncate(this.props.data.issuer, this.props.data.issuer)}<br/>
-                        {this.getPopUp(this.props.data.recipient, this.props.data.recipient)}
-                        Recipient: {this.truncate(this.props.data.recipient, this.props.data.recipient)}<br/>
-                        <a target='blank' href={this.ipfsURI}>IPFS Hash {this.props.ipfs}</a><br/>
-                        Expires: {moment.unix(this.props.data.expiration).toString()}<br/>
-                        {this.getPopUp(this.props.signature, this.props.signature)}
-                        Signature: {this.truncate(this.props.signature, this.props.signature)}
+            <Button style={styles.buttonDark} onClick={this.verify}>
+                <Button.Content className='animated infinite pulse' content='verify me!' />
+            </Button>
+        );
+    }
+
+    showFullContent = (mobile) => {
+        const imageSrc = this.props.data.image || noimage;
+        return (
+            <Card raised style={{
+                boxShadow: `rgba(62, 99, 215, 0.73) 0px 0px 8px`, 
+                WebkitBoxShadow: `rgba(62, 99, 215, 0.73) 0px 0px 8px`,
+                border: '1px solid rgb(221, 221, 221)', 
+                width: '100%'}}>
+                <Card.Header as='h2' style={{
+                    display: 'flex', 
+                    flexDirection: this.props.mobile ? 'column' : 'row',
+                    alignItems: !this.props.mobile ? 'center': null,
+                    marginBottom: 0,
+                    justifyContent: 'space-between'}}>
+                    <Image style={{marginLeft: 5, alignSelf: this.props.mobile ? 'center' : null}} floated='left' size='tiny' src={imageSrc} />
+                    <span style={styles.badge.fullCard.contentHeader}>
+                        {this.props.data.name}
+                        <Card.Meta as='p' style={{fontSize: 'medium'}}>
+                            Date Earned: {moment.unix(this.props.data.dateEarned).format(DATE_FORMAT)}<br/>
+                            Expires: {moment.unix(this.props.data.expiration).format(DATE_FORMAT)}
+                        </Card.Meta>
+                    </span>
+                    {!this.state.verified && !this.state.inProgress ? this.verifyBtn() : <Icon size='large' {...this.state.icon}/>}
+                </Card.Header>
+                <Card.Content>
+                    <Card.Description style={{fontSize: 'large'}}>
+                        <List>
+                            <List.Item style={{display: 'flex', alignItems: 'baseline', fontSize: this.props.mobile ? 'medium' : null}}>
+                                <Icon style={{display: 'flex', alignSelf: 'center', marginRight: 10, color: styles.badge.fullCard.content.color}} size='small' name='university' />
+                                <span style={{marginRight: 6}}>
+                                    <Header style={styles.badge.fullCard.contentHeader} as='h3' content='School:'/>
+                                </span> {this.props.data.school}
+                            </List.Item>
+
+                            <List.Item style={{display: 'flex', alignItems: 'baseline', fontSize: this.props.mobile ? 'medium' : null}}>
+                                <Icon style={{display: 'flex', alignSelf: 'center', marginRight: 10, color: styles.badge.fullCard.content.color}} size='small' name='certificate' />
+                                <span style={{marginRight: 6}}>
+                                    <Header style={styles.badge.fullCard.contentHeader} as='h3' content='Institution ID:'/>
+                                </span>{this.props.data.institutionId}
+                            </List.Item>
+
+                            <List.Item style={{display: 'flex', alignItems: 'baseline', fontSize: this.props.mobile ? 'medium' : null}}>
+                                <Icon style={{display: 'flex', alignSelf: 'center', marginRight: 10, color: styles.badge.fullCard.content.color}} size='small' name='user' />
+                                <span style={{marginRight: 6}}>
+                                    <Header style={styles.badge.fullCard.contentHeader} as='h3' content='Issuer:'/>
+                                </span> {this.truncate(this.props.data.issuer, `issuer-${this.props.data.issuer}`)}
+                                {this.getPopUp(this.props.data.issuer, 'Public Key of the user who issued this badge', `issuer-${this.props.data.issuer}`)}        
+                            </List.Item>
+
+                            <List.Item style={{display: 'flex', alignItems: 'baseline', fontSize: this.props.mobile ? 'medium' : null}}>
+                                <Icon style={{display: 'flex', alignSelf: 'center', marginRight: 10, color: styles.badge.fullCard.content.color}} size='small' name='graduation cap' />
+                                <span style={{marginRight: 6}}>
+                                    <Header style={styles.badge.fullCard.contentHeader} as='h3' content='Recipient:'/>
+                                </span> {this.truncate(this.props.data.recipient, this.props.data.recipient)}
+                                {this.getPopUp(this.props.data.recipient, 'Public Key of the user who received this badge', this.props.data.recipient)}        
+                            </List.Item>
+
+                            <List.Item style={{display: 'flex', alignItems: 'baseline', fontSize: this.props.mobile ? 'medium' : null}}>
+                                <Icon style={{display: 'flex', alignSelf: 'center', marginRight: 10, color: styles.badge.fullCard.content.color}} size='small' name='pencil alternate' />
+                                <span style={{marginRight: 6}}>
+                                    <Header style={styles.badge.fullCard.contentHeader} as='h3' content='Signature:'/>
+                                </span> {this.truncate(this.props.signature, this.props.signature)}
+                                {this.getPopUp(this.props.signature, 'Signature is data that proves a badge was issued by a certain issuer', this.props.signature)}      
+                            </List.Item>
+                            <List.Item style={{display: 'flex', alignItems: 'baseline', fontSize: this.props.mobile ? 'medium' : null}}>
+                                <Icon style={{display: 'flex', alignSelf: 'center', marginRight: 10, color: styles.badge.fullCard.content.color}} size='small' name='cubes' />
+                                <span style={{marginRight: 6}}>
+                                    <Header style={styles.badge.fullCard.contentHeader} as='a' target='blank' href={this.ipfsURI} content='IPFS Hash:'/>
+                                </span>
+                                {this.truncate(this.props.ipfs, this.props.ipfs)}
+                                {this.getPopUp(this.props.ipfs, 'Link to the core data of this badge in decentralized storage', this.props.ipfs)}  
+                            </List.Item>
+                        </List>
                     </Card.Description>
                 </Card.Content>
-            </Card.Content>
+                <Card.Content extra>
+                    <CredentialCardActions 
+                        mobile={this.props.mobile}
+                        loading={this.state.inProgress}
+                        verify={{enabled: this.props.verifyAction, callback: this.verify}}
+                        qrcode={{enabled: this.props.qrcodeAction, callback: console.log}}
+                        download={{enabled: !this.props.mobile && this.props.downloadAction, callback: this.downloadQRC}}
+                    />
+                </Card.Content>
+            </Card> 
         );
     }
+    
     showPreview = () => {
-        const imageSrc = this.props.data.image || logo;
+        const imageSrc = this.props.data.image || noimage;
         return (
-            <Card.Content style={{wordWrap: 'break-word'}}>
-                <Image floated='right' size='small' verticalAlign='middle' src={imageSrc} />
-                <Card.Header>Preview {this.props.data.name ? `- ${this.props.data.name}`: null}</Card.Header>
-                <Card.Meta>{this.props.data.dateEarned ? `Date Earned: ${moment(this.props.data.dateEarned).toString()}` : null}</Card.Meta>
-                {this.getPopUp(this.props.data.issuer, this.props.data.issuer)}
-                <div style={{display: 'flex', flexDirection: 'column'}}>
-                    <p>School: {this.props.data.school}<br/></p>
-                    <p>Institution ID: {this.props.data.institutionId}</p><br/>
-                    {this.truncate(`Issuer: ${this.props.data.issuer}`, this.props.data.issuer)}<br/>
-                    {this.props.data.recipient ? this.truncate(`Recipient: ${this.props.data.recipient}`, this.props.data.recipient) : null}<br/>
-                    <p>{this.props.data.expiration ? `Expires: ${moment(this.props.data.expiration).toString()}` : null}<br/></p>
-                </div>
-            </Card.Content>
+            <Card raised style={{
+                    boxShadow: `rgba(62, 99, 215, 0.73) 0px 0px 8px`, 
+                    WebkitBoxShadow: `rgba(62, 99, 215, 0.73) 0px 0px 8px`,
+                    border: '1px solid rgb(221, 221, 221)', 
+                    width: '100%'}}>
+                    <Card.Header as='h2' style={{
+                            display: 'flex', 
+                            alignItems: 'center',
+                            marginBottom: 0,
+                            justifyContent: 'space-between'}}>
+                        <Image style={{marginLeft: 5}} floated='left' size='tiny' src={imageSrc} />
+                        <span style={styles.badge.fullCard.contentHeader}>
+                                Preview - {this.props.data.name ? this.props.data.name : null}
+                            <Card.Meta as='p' style={{fontSize: 'medium'}}>
+                                Date Earned: {moment.unix(this.props.data.dateEarned).format(DATE_FORMAT)}<br/>
+                                Expires: {moment.unix(this.props.data.expiration).format(DATE_FORMAT)}
+                            </Card.Meta>
+                        </span>
+                    </Card.Header>
+                    <Card.Content>
+                        <Card.Description>
+                            <List>
+                                <List.Item style={{display: 'flex', alignItems: 'baseline'}}>
+                                    <Icon style={{display: 'flex', alignSelf: 'center', marginRight: 10, color: styles.badge.fullCard.content.color}} size='small' name='university' />
+                                    <span style={{marginRight: 6}}>
+                                        <Header style={styles.badge.fullCard.contentHeader} as='h3' content='School:'/>
+                                    </span> {this.props.data.school}
+                                </List.Item>
+
+                                <List.Item style={{display: 'flex', alignItems: 'baseline'}}>
+                                    <Icon style={{display: 'flex', alignSelf: 'center', marginRight: 10, color: styles.badge.fullCard.content.color}} size='small' name='certificate' />
+                                    <span style={{marginRight: 6}}>
+                                        <Header style={styles.badge.fullCard.contentHeader} as='h3' content='Institution ID:'/>
+                                    </span>{this.props.data.institutionId}
+                                </List.Item>
+                                {/* <List.Item style={{display: 'flex', alignItems: 'baseline'}}>
+                                    <Icon style={{display: 'flex', alignSelf: 'center', marginRight: 10, color: styles.badge.fullCard.content.color}} size='small' name='user' />
+                                    <span style={{marginRight: 6}}>
+                                        <Header style={styles.badge.fullCard.contentHeader} as='h3' content='Issuer:'/>
+                                    </span> {this.truncate(this.props.data.issuer, `issuer-${this.props.data.issuer}`)}
+                                    {this.getPopUp(this.props.data.issuer, 'Public Key of the user who issued this badge', `issuer-${this.props.data.issuer}`)}        
+                                </List.Item>
+
+                                <List.Item style={{display: 'flex', alignItems: 'baseline'}}>
+                                    <Icon style={{display: 'flex', alignSelf: 'center', marginRight: 10, color: styles.badge.fullCard.content.color}} size='small' name='graduation cap' />
+                                    <span style={{marginRight: 6}}>
+                                        <Header style={styles.badge.fullCard.contentHeader} as='h3' content='Recipient:'/>
+                                    </span> {this.truncate(this.props.data.recipient, this.props.data.recipient)}
+                                    {this.getPopUp(this.props.data.recipient, 'Public Key of the user who received this badge', this.props.data.recipient)}        
+                                </List.Item> */}
+                            </List>
+                        </Card.Description>
+                    </Card.Content>
+            </Card>
         );
     }
+
+    render() {
+        return this.props.full ? this.showFullContent() : this.showPreview();
+    }
+}
+export class Credential extends Component {
     render() {
         return (
-            <Card raised style={{width: '100%'}}>
-                {this.props.full ? this.showFullContent() : this.showPreview()} 
-            </Card>
+            <ThemeContext.Consumer>
+                {theme => <CredentialComponent {...this.props} mobile={theme} /> }
+            </ThemeContext.Consumer>
         )
     }
 }
@@ -178,7 +512,7 @@ export class Verifier extends Component {
         const requrements = [
             {heading:'Recipient publickey', icon:'user', info: 'This is is the public address of the user who owns the credential'},
             {heading:'Credential Name', icon:'shield', info: 'The name of the credential you want to verify, be sure the spelling is exactly the same'},
-            {heading:'Institution ID', icon:'university', info: 'This is the ID assigned to the Issuer.'},
+            {heading:'Institution ID', icon:'university', info: 'This is the ID assigned to the Issuer'},
         ]
 
         this.styles = {
@@ -195,11 +529,14 @@ export class Verifier extends Component {
             results: null,
             toastId: null,
             loading: false,
+            loaderMessage: null,
             visible: false,
             formError: null,
             formErrors: [],
             qrcode: false,
-            heading, descscription, requrements
+            heading, descscription, requrements,
+            showResults: false,
+            showForm: true
         }
 
         this.handleScan = this.handleScan.bind(this)
@@ -218,12 +555,14 @@ export class Verifier extends Component {
     async handleStatusUpdate(data) {
         try {
             await sleep(2);
-            const {message, success} = data;
-            Toaster.update(this.state.toastId, message, success ? toast.TYPE.SUCCESS : toast.TYPE.ERROR);
+            const { message, success } = data;
+            const icon = success ? {name: 'check', color: 'green'} : {name: 'ban', color: 'red'}
+            this.setState({loaderMessage: {message: message, icon: icon}});
         } catch (error) {
             console.log(error);
         }    
     }
+
     async uploadJSON(e) {
         this.setState({loading: true, results: null, visible: false});
         try {
@@ -263,11 +602,11 @@ export class Verifier extends Component {
             });
         }
     }
+
     isValidForm() {
         const errors = [
             !this.badgeforceVerifier.isValidPublicKey(this.state.recipient) ? new Error('Invalid public key for recipient') : null,
             this.state.name === '' ? new Error('Credential name is required') : null,
-            this.state.institutionId === '' ? new Error('Institution ID is required') : null,
         ].filter(error => {
             return error !== null;
         });
@@ -292,10 +631,9 @@ export class Verifier extends Component {
     }
     async handleVerify() {
         if(this.isValidForm()){
-            const toastId = Toaster.notify('Verifying', toast.TYPE.INFO);
-            this.setState({results: null, visible: false, toastId, loading: true});
+            this.setState({results: null, visible: false, loading: true});
             try {
-                const results = await this.badgeforceVerifier.verifyAcademic(this.state.recipient, this.state.name, this.state.institutionId);
+                const results = await this.badgeforceVerifier.verifyAcademic(this.state.recipient, this.state.name, 'bf-edu-123');
                 Toaster.update(this.state.toastId, 'Done Verifying', toast.TYPE.INFO);
                 this.setState({
                     results, 
@@ -307,6 +645,7 @@ export class Verifier extends Component {
                     formErrors: [],
                     loading: false,
                     visible: true,
+                    showForm: false
                 });
             } catch (error) {
                 console.log(error);
@@ -345,35 +684,29 @@ export class Verifier extends Component {
     }
     showResults() {
         return (
-            <Grid.Row container='true' columns={2} stackable='true'>
-                <Grid.Column style={{display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
-                    <Header
-                        as='h1'
-                        content='Credential'
-                        textAlign='center'
-                        subheader='Credential data is stored off chain in IPFS, Issuance is kept on chain immutable and referenced for verification'
-                    />
-                    <Credential
-                        full={true}
-                        data={this.state.results.degree.coreInfo} 
-                        signature={this.state.results.degree.signature} 
-                        ipfs={this.state.results.degree.storageHash.hash}/>
-                    {/* <Issuance data={this.state.results.issuance} /> */}
-                </Grid.Column>
-            </Grid.Row>
+            <Credential
+                full={true}
+                data={this.state.results.degree.coreInfo}
+                verified={true}
+                verificationData={this.state.results} 
+                signature={this.state.results.degree.signature} 
+                ipfs={this.state.results.degree.storageHash.hash}/>
         );
     }
 
     renderRequirements() {
         return (
-            <List as='ol'>
+            <List celled>
                 {this.state.requrements.map((requirement, i) => {
-                    return <List.Item as='li' key={i}>
-                        <span className='content-header'>
-                            <Icon name={requirement.icon} />{requirement.heading}:&emsp;
-                        </span>
-                        <span className='content-text'>{requirement.info}</span>
-                    </List.Item>
+                    return (
+                        <List.Item key={i} style={{display: 'flex', alignItems: 'baseline'}}>
+                            <Icon style={{display: 'flex', alignSelf: 'center', marginRight: 10, color: styles.badge.fullCard.content.color}} name={requirement.icon} />
+                            <span style={{marginRight: 6}}>
+                                <Header style={styles.badge.fullCard.contentHeader} as='h4' content={`${requirement.heading}`}/>
+                            </span>
+                            <span className='content-text'>{requirement.info}</span>
+                        </List.Item>
+                    );
                 })}
             </List>
         );
@@ -381,7 +714,7 @@ export class Verifier extends Component {
 
     renderForm() {
         return (
-            <Form loading={this.state.loading} size='large' error={this.state.formError ? true : undefined}>
+            <Form size='large' error={this.state.formError ? true : undefined}>
                 <ToastContainer autoClose={5000} />
                 <Form.Field style={styles.inputField} error={this.state.formError ? true : undefined} value={this.state.recipient}>
                     <input style={styles.inputField} placeholder='Recipient Public Key' onChange={(e) => this.setState({recipient: e.target.value})}/>
@@ -390,7 +723,7 @@ export class Verifier extends Component {
                     <input style={styles.inputField} placeholder='Credential Name' onChange={(e) => this.setState({name: e.target.value})}/>
                 </Form.Field>
                 <Form.Field style={styles.inputField} error={this.state.formError ? true : undefined} value={this.state.institutionId}>
-                    <input style={styles.inputField} placeholder='Institution ID' onChange={(e) => this.setState({institutionId: e.target.value})} />
+                    <input disabled style={styles.inputField} placeholder='bf-edu-123' onChange={(e) => this.setState({institutionId: e.target.value})} />
                 </Form.Field>
                 <Button.Group vertical={this.props.mobile || this.props.tablet ? true : false } fluid>
                     <Button size='small' ref={this.verifyButtonRef} disabled={this.state.loading} style={styles.buttonLight} onClick={this.handleVerify} content='Verify Using Form' icon='check' labelPosition='left'/>
@@ -400,9 +733,26 @@ export class Verifier extends Component {
                     {/* <Form.Button disabled={this.state.loading} style={{display: 'flex', alignSelf: 'flex-start'}} color='orange' size='large' content='Verify From QR Code Scan' icon='qrcode' labelPosition='right' onClick={this.showQRScanner} /> */}
                 {this.state.formErrors.length > 0 ? this.showFormErrors() : null}
                 <input type="file" id="jsonUpload" onChange={this.uploadJSON} style={{display: 'none'}} />  
-                {this.state.results ? this.showResults() : null}
             </Form>
         );
+    }
+
+    formOrResults = () => {
+        return <Button 
+                    size='large' 
+                    style={styles.buttonDark} 
+                    content={this.state.showForm ? 'view results' : 'verify another'} 
+                    icon={this.state.showForm ? 'shield' : 'check'} 
+                    labelPosition='right' 
+                    onClick={() => this.setState({showForm: !this.state.showForm})} />
+    } 
+
+    getButtonHeader = () => {
+        if(this.state.results) {
+            return this.formOrResults()
+        } 
+
+        return null;
     }
 
     render() {
@@ -410,6 +760,12 @@ export class Verifier extends Component {
             <Segment style={{
                 padding: '4em 0em'
             }} vertical>
+                <Dimmer active={this.state.loading} inverted>
+                    {this.state.loading ? 
+                        <Loader inverted>
+                            {this.state.loaderMessage ? <span> {this.state.loaderMessage.message} <Icon {...this.state.loaderMessage.icon} /> </span> : null}
+                        </Loader> : null }
+                </Dimmer>
                 <Grid container stackable>
                     <Grid.Row verticalAlign='middle' >
                         <Grid.Column width={6}>
@@ -422,10 +778,11 @@ export class Verifier extends Component {
                                     {this.renderRequirements()}   
                                 </Item.Description>                            
                             </Item>
-                            {this.state.results ? this.showResultsData() : null}
                         </Grid.Column>
                         <Grid.Column floated='right' width={8}>
-                            {this.renderForm()}
+                            {this.getButtonHeader()}
+                            {this.state.results && !this.state.showForm ? this.showResults() : null}
+                            {this.state.showForm ? this.renderForm() : null}
                         </Grid.Column>
                     </Grid.Row>
                 </Grid>
@@ -437,7 +794,13 @@ export class Verifier extends Component {
 export const VerifierComponent = (props) => {
     return (
         <ThemeContext.Consumer>
-            {theme => <Verifier mobile={theme} />}
+            {theme => {
+                return (
+                    <ErrorBoundary>
+                        <Verifier mobile={theme} />
+                    </ErrorBoundary>
+                );
+            }}
         </ThemeContext.Consumer>
     )
 }

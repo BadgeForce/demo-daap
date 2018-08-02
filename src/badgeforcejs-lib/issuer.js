@@ -6,7 +6,7 @@ const { Batch, MetaData} = require('./batch_status_watcher');
 const namespacing = require('./namespacing');
 const localforage = require('localforage');
 const {createHash} = require('crypto');
-const {Core, StorageHash, Issuance } = require('../protobufs-js/browser/credentials/compiled').issuer_pb;
+const {Core, StorageHash } = require('../protobufs-js/browser/credentials/compiled').issuer_pb;
 
 
 export class TransactionStoreManager extends BadgeForceBase {
@@ -109,16 +109,17 @@ export class IssuanceStoreManager extends TransactionStoreManager {
         super(publicKey);
         this.issuer = publicKey
         this.namespace = namespacing.partialLeafAddress(this.issuer, namespacing.ISSUANCE);
-        this.loadIssuances()
+        this.loadIssuances();
     }
 
     async loadIssuances() {
         try {
             const { data } = await this.queryState(this.namespace);
-            if(data.length === 0) return []
+            if(data.length === 0) {
+                return []
+            } 
             const issuances = data.map(issuance => this.decodeIssuance(Buffer.from(issuance.data, 'base64')))
             const results = await Promise.all(issuances.map(async issuance => await this.recreateBadge(issuance)));
-            console.log(results)
             return results;
         } catch (error) {
             console.log('IssuanceStoreManager:loadIssuances', error);
@@ -178,16 +179,25 @@ export class Issuer extends IssuanceStoreManager {
         }
     }
 
+    transformCoreInfo(degree) {
+        Object.keys(degree.coreInfo).forEach(key => {
+            if(degree.coreInfo[key] === "") {
+                delete degree.coreInfo[key];
+            }
+        });
+        return Core.encode(Core.create(degree.coreInfo)).finish();
+    }
+
     async revoke(data) {
-        console.log(data)
         try {
             const {recipient, credentialName, institutionId} = data;
             const hashStateAddress = namespacing.identifierAddress(namespacing.ACADEMIC, recipient, recipient.concat(credentialName).concat(institutionId));
             const storageHash = await this.getIPFSHash(hashStateAddress);
             const degree = await this.getDegreeCore(storageHash.hash);
-            const response = await this.transactor.revoke(this.account.signer.sign(Core.encode(Core.create(degree.coreInfo)).finish()), this.account.signer);
+            const response = await this.transactor.revoke(this.transformCoreInfo(degree), this.account.signer);
             await this.newTransaction(new Batch(response.link, new MetaData('REVOKED', `Revoked credential ${credentialName} owned by ${recipient}`, moment().toString())), true);
         } catch (error) {
+            console.log('REVOKE:ERROR', error)
             let message
             try {
                 message = JSON.parse(error.message);

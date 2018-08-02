@@ -152,8 +152,9 @@ export class Transactor extends BadgeForceBase {
         }
     }
 
-    revoke = async (signature, signer) => {    
+    revoke = async (signatureBytes, signer) => {    
         try {
+            const signature = this.signatureContext.sign(signatureBytes, Buffer.from(signer._privateKey.asHex(), 'hex')).toString();
             const revokation = Revoke.create({signature});    
             // we are going to wrap this data in google.protobuf.any, to allow for arbitrary data passing in our 1 transaction handler many subhandler scheme 
             const revokationAny = google.protobuf.Any.create({

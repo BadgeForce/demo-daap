@@ -18,7 +18,7 @@ const moment = require('moment');
 export class RevokeForm extends Component {
     constructor(props){
         super(props);
-        this.state = {recipient: '', credentialName: '', institutionId: 'badgeforce-uni-123456', formErrors: [], loading: false, formError: false};
+        this.state = {recipient: '', credentialName: '', institutionId: 'bf-edu-123', formErrors: [], loading: false, formError: false};
         this.accountManager = new AccountManager();
     }
     handleRevoke = async() => {
@@ -128,7 +128,7 @@ export class IssueForm extends Component {
         `
 
         this.issuanceDescription = `In the BadgeForce ecosystem when a credential is issued an Issuance is created and written to the blockchain
-            state. This data will be immutable (it cannot be deleted or modified in anyway), and replicated throughout the entire blockchain network. 
+            state. This data will be immutable (it cannot be deleted or modified in any way), and replicated throughout the entire blockchain network. 
             An Issuance serves two purposes; It is a pivotal part of the credential verification process because it contains data from a credential created
             during the origin issuing. It also serves as a receipt record for issuer's, allowing them to look back at their entire issuing history, using the 
             data inside an Issuance an issuer can recreate any credential they ever issued while at the same time only storing a tiny amount of data on chain
@@ -177,7 +177,6 @@ export class IssueForm extends Component {
     }
 
     async handleRevoke(data) {
-        console.log(data)
         this.setState({results: null, visible: false, loading: true});
         try {
             await this.accountStore.current.revoke(data);
@@ -355,15 +354,12 @@ export class IssueForm extends Component {
         )
     }
 
+    preview = () => <Credential full={false} data={{...this.demoCred, issuer: this.props.accountStore.current.account.publicKey, ...this.state}} />
+
     renderInfoComponent() {
         switch (this.state.value) {
             case 'issue':
-                return (        
-                    <Item.Content 
-                        as={Credential} 
-                        full={false} 
-                        data={{...this.demoCred, issuer: this.props.accountStore.current.account.publicKey, ...this.state}} />
-                );
+                return this.preview()
             case 'revoke':
                 return this.revokeInfo();
             case 'issuance': 
@@ -380,7 +376,7 @@ export class IssueForm extends Component {
             }} vertical>
                 <Grid container stackable>
                     <Grid.Row >
-                        <Grid.Column width={6}>
+                        <Grid.Column width={this.state.value === 'issuer' ? 12 : 8}>
                             <Item>
                                 {/* <Form.Button size='large' content='TEST ' onClick={this.test} /> */}
                                 <Item.Header textAlign='left' as={Header}>
@@ -389,7 +385,7 @@ export class IssueForm extends Component {
                                 {this.renderInfoComponent()}
                             </Item>
                         </Grid.Column>
-                        <Grid.Column floated='right' width={8}>
+                        <Grid.Column floated='right' width={this.state.value === 'issuer' ? 6 : 8}>
                             <Form.Group style={{display: 'flex', justifyContent: 'space-evenly', flexStart: 'end'}} inline>
                                 {this.renderOptions()}
                             </Form.Group>

@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Header, Dropdown, Grid, Button, Loader, Popup } from 'semantic-ui-react'
+import { Header, Dropdown, Grid, Button, Loader, Popup, Message } from 'semantic-ui-react'
 import { Credential, Issuance, sleep } from '../verifier';
 import { inject } from 'mobx-react';
 import { reaction } from 'mobx';
@@ -16,7 +16,7 @@ export class CompactInfoList extends Component {
     setActive = (e, {value}) => {
         const issuance = this.issuances.filter( ({ id }) => id === value).shift();
         this.props.setActive(issuance);
-        this.setState({active: issuance});
+        this.setState({active: issuance.id});
     }
 
     getOption = (name, recipient, key) =>  {
@@ -65,6 +65,7 @@ export class Issuances extends Component {
         }
         this.accountStore = this.props.accountStore;
         this.refresh = this.refresh.bind(this);
+        this.setActive = this.setActive.bind(this);
         this.accountChangeReaction = this.accountChangeReaction.bind(this);
         this.disposeAccountChange = null;
     }
@@ -84,7 +85,7 @@ export class Issuances extends Component {
             const issuances = await this.props.accountStore.current.loadIssuances();
             this.setState({issuances, loading: {toggle: false, message: ''}});
         } catch (error) {
-            console.log(error.message);
+            console.log(error);
             this.setState({loading: {toggle: false, message: ''}});
         }
     }
@@ -105,27 +106,29 @@ export class Issuances extends Component {
         await this.loadIssuances();
         await sleep(1);
     }
+
+    setActive(active) {
+        this.setState({active})
+    }
     renderIssuances() {
-        console.log('renderIssuances', this.state);
         return (
             <Grid.Row>
                 <Grid.Column width={4} >
-                    <CompactInfoList issuances={this.state.issuances} setActive={(active) => this.setState({active})} />
+                    <CompactInfoList issuances={this.state.issuances} setActive={this.setActive} />
                 </Grid.Column> 
                 <Grid.Column style={{height: '100vh'}} computer={12} mobile={4} tablet={12}>
                     {this.renderActive()}
+
                 </Grid.Column>  
             </Grid.Row>
         );
     }
     renderActive() {
-        console.log('RENDER ACTIVE', this.state);
         const { id, issuance, degree } = this.state.active || this.state.issuances[0];
-        console.log(id, issuance, degree);
         if(id) {
             return (
                 <div style={{marginTop: 10}}>
-                    <Credential full={true} data={degree.coreInfo} signature={degree.signature} ipfs={id}/>
+                    <Credential verifyImmediate={true} showactions={true} issuance={issuance} degree={degree} full={true} data={degree.coreInfo} signature={degree.signature} ipfs={id}/>
                     <Issuance data={issuance} />
                 </div>
             );
@@ -170,8 +173,9 @@ export class Issuances extends Component {
                 <Grid.Row style={{display: 'flex', flexDirection: 'row', justifyContent: 'flex-end'}}>
                     <Button circular color='grey' onClick={this.refresh} size='large' icon='refresh'/>
                 </Grid.Row>
-                {this.state.issuances.length === 0 ? <Header style={styles.navMenuHeader} content={!this.state.loading.toggle && this.state.issuances.length === 0 ? this.renderHeader() : null} as='h4' /> : null} 
-                {!this.state.loading.toggle && this.state.issuances.length > 0 ? this.renderIssuances() : null}    
+                {this.state.issuances.length === 0 && !this.state.loading ? <Message header='Issuances could not be found or loaded' content='Refresh to try again' warning /> : null}
+                {/* {this.state.issuances.length === 0 ? <Header style={styles.navMenuHeader} content={!this.state.loading.toggle && this.state.issuances.length === 0 ? this.renderHeader() : null} as='h4' /> : null}  */}
+                {!this.state.loading.toggle && this.state.issuances.length > 0 ? this.renderIssuances() : null}
             </Grid.Column>
         )
     }

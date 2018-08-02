@@ -12,8 +12,8 @@ import {
     Grid, Confirm, Input, Item, Menu, Button, 
     Dimmer, Loader, Modal, Header, Icon, Dropdown, Popup } from 'semantic-ui-react'
 import 'animate.css/animate.min.css';
-import Label from 'semantic-ui-react/dist/commonjs/elements/Label/Label';
 
+const Fuse = require('fuse.js');
 const moment = require('moment');
 class PasswordConfirm extends Component {
     state = {password: ''};
@@ -60,31 +60,20 @@ export default class Accounts extends Component {
             }
         }
 
-        
-
-        this.handleIssue = this.handleIssue.bind(this);
-        this.handleRevoke = this.handleRevoke.bind(this);
-        this.handleTransactionsUpdate = this.handleTransactionsUpdate.bind(this);
         this.importAccount = this.importAccount.bind(this);
         this.importAccountDone = this.importAccountDone.bind(this);
+        this.importAccountRaw = this.importAccountRaw.bind(this);
         this.createAccount = this.createAccount.bind(this);
         this.downloadKeyPair = this.downloadKeyPair.bind(this);
         this.showNewAccountInfo = this.showNewAccountInfo.bind(this);
         this.newAccountModal = this.newAccountModal.bind(this);
-
-        this.accountStore = this.props.accountStore;
-        this.demoCred = {
-            school: 'BadgeForce University',
-            institutionId: '123456'
-        }
-
         this.accountManager = new AccountManager();
     }
     async componentDidMount() {
-        if(this.accountStore.current === null) {
+        if(this.props.accountStore.current === null) {
             this.setState({loading: {toggle: true, message: 'Loading accounts from browser storage'}})
-            const noAccounts = await this.accountStore.getCache();
-            console.log(this.accountStore.current)
+            const noAccounts = await this.props.accountStore.getCache();
+            console.log(this.props.accountStore.current)
             await sleep(1);
             if(noAccounts) {
                 Toaster.notify("No accounts found in storage, create one using accounts tab", toast.TYPE.WARNING);
@@ -107,7 +96,7 @@ export default class Accounts extends Component {
                     <h3>Privatekey: {this.state.newAccountInfo.privateKey}</h3>
                 </Modal.Content>
                 <Modal.Actions>
-                    <Button color='green' onClick={() => this.setState({newAccountInfo: {
+                    <Button style={styles.buttonKindaLightNoBorder} onClick={() => this.setState({newAccountInfo: {
                         name: '',
                         privateKey: '',
                         show: false
@@ -130,11 +119,11 @@ export default class Accounts extends Component {
     async createAccount(password, name) {
         try {
             const account = new Account(this.accountManager.newAccount(password, name));
-            await this.accountStore.newAccount(account);
-            this.accountStore.switchAccount(account.account.publicKey);
-            // if(!isMobile()) {
-            //     this.downloadKeyPair(name);
-            // }
+            await this.props.accountStore.newAccount(account);
+            this.props.accountStore.switchAccount(account.account.publicKey);
+            if(!this.props.mobile) {
+                this.downloadKeyPair(name);
+            }
             this.showNewAccountInfo({
                 name, 
                 privateKey: account.account.signer._privateKey.asHex()
@@ -145,7 +134,7 @@ export default class Accounts extends Component {
         }
     }
     downloadKeyPair(name) {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(this.accountStore.current.account.downloadStr);
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(this.props.accountStore.current.account.downloadStr);
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href",     dataStr);
         downloadAnchorNode.setAttribute("download", `badgeforce-keys${name ? name: moment().toISOString()}.json`);
@@ -178,8 +167,8 @@ export default class Accounts extends Component {
         }
         
         if(!handleErr(error)) {
-            await this.accountStore.newAccount(new Account(account));
-            await this.accountStore.switchAccount(account.publicKey);
+            await this.props.accountStore.newAccount(new Account(account));
+            await this.props.accountStore.switchAccount(account.publicKey);
             this.setState(stateUpdate);
             Toaster.notify('Account Imported', toast.TYPE.SUCCESS);
         }   
@@ -211,8 +200,8 @@ export default class Accounts extends Component {
 
         try {
             console.log(account);
-            await this.accountStore.newAccount(account);
-            this.accountStore.switchAccount(account.account.publicKey);
+            await this.props.accountStore.newAccount(account);
+            this.props.accountStore.switchAccount(account.account.publicKey);
         } catch (error) {
             console.log(error);
             Toaster.notify('Something Went Wrong!', toast.TYPE.ERROR);
@@ -227,61 +216,12 @@ export default class Accounts extends Component {
             }, duration*1000)
 		});
     }
-
-    handleTransactionsUpdate(transaction) {
-        const transactions = this.state.transactions.map(tx => {
-            return tx.id === transaction.id ? transaction : tx;
-        })
-        this.setState({transactions});
-    }
-
-    async handleIssue(data) {
-        this.setState({results: null, visible: false, loading: true});
-        try {
-            const {recipient, dateEarned, name, expiration, image} = data;
-            const coreData = {
-                ...this.demoCred,
-                recipient,
-                dateEarned: dateEarned.unix().toString(),
-                expiration: expiration.unix().toString(),
-                issuer: this.accountStore.current.account.publicKey,
-                name,
-                image
-            }
-            await this.accountStore.current.issueAcademic(coreData);
-        } catch (error) {
-            Toaster.notify(error.message, toast.TYPE.ERROR);
-            this.setState({
-                results: null,
-                loading: {toggle: false, message: ''},
-                error,
-                toastId: null
-            });
-            return true;
-        }
-    }
-
-    async handleRevoke(data) {
-        this.setState({results: null, visible: false, loading: true});
-        try {
-            const watcher = await this.accountStore.current.revoke(data);
-            this.setState(prevState => ({
-                loading: {toggle: false, message: ''},
-                visible: true,
-                toastId: null,
-                transactions: [...prevState.transactions, watcher]
-            }));
-        } catch (error) {
-            Toaster.notify('Something Went Wrong While Revoking!', toast.TYPE.ERROR);
-            this.setState({results: null, visible: false, loading: false});
-        }
-    }
-    
+  
     render() {
         return (
             <Grid.Column>
                 {this.newAccountModal()}
-                <Dimmer active={this.state.loading.toggle}>
+                <Dimmer inverted active={this.state.loading.toggle}>
                     <Loader indeterminate>{this.state.loading.message}</Loader>
                 </Dimmer>
                 <ToastContainer autoClose={5000} />
@@ -289,7 +229,7 @@ export default class Accounts extends Component {
                         this.setState({confirmPassword: {loading: false}});
                         try {
                             const account = this.accountManager.decryptAccount(password.value, this.state.confirmPassword.account);
-                            await this.accountStore.newAccount(new Account(account, this.handleTransactionsUpdate.bind(this)));
+                            await this.props.accountStore.newAccount(new Account(account, this.handleTransactionsUpdate.bind(this)));
                             Toaster.notify('Account imported', toast.TYPE.SUCCESS);
                             this.setState({confirmPassword: {show: false, account: null, loading: false}});
                         } catch (error) {
@@ -306,14 +246,11 @@ export default class Accounts extends Component {
                     cancel={() => this.setState({confirmPassword: {show: false, account: null, loading: false}})
                 }
                 />
-                {!this.state.loading.toggle ? 
-                    <AccountOptions 
-                        handleImportAccount={this.importAccount} 
-                        handleCreateAccount={this.createAccount}
-                        handleImportRaw={this.importAccountRaw}
-                    />:
-                    null
-                }
+                <AccountOptions
+                    {...this.props}
+                    handleImportAccount={this.importAccount} 
+                    handleCreateAccount={this.createAccount}
+                    handleImportRaw={this.importAccountRaw}/>
             </Grid.Column>
         );
     }
@@ -323,6 +260,8 @@ export default class Accounts extends Component {
 @inject('badgeStore')
 @observer
 export class AccountNavMenuItem extends Component {
+    searchOptions = {keys: ['name', 'publickey']}
+
     constructor(props) {
         super(props);
         this.state = { open: false, options: [], loading: false }
@@ -331,7 +270,6 @@ export class AccountNavMenuItem extends Component {
         this.getOption = this.getOption.bind(this);
     }
 
-    // OPTIONS EXAMPLE:  [ { key: 'Arabic', text: 'Arabic', value: 'Arabic' }, ...  ]
     async componentDidMount() {
         if(!this.props.accountStore.loadingCache && this.props.accountStore.current === null) {
             this.setState({loading: true})
@@ -362,17 +300,15 @@ export class AccountNavMenuItem extends Component {
                 line={2}
                 truncateText="…"
                 text={text}
-                // textTruncateChild={<a href='' onClick={(e) => {
-                //     e.preventDefault();
-                //     document.getElementById('__accountPopup__').click()
-                // }} >more</a>}
             />
         );
     }
 
     getOption({account: {name, publicKey}}) {
-        return { key: publicKey, text: name || publicKey, value: publicKey }
+        return { key: publicKey, text: name || `${publicKey.substring(0, 15)}...`, value: publicKey, name, publickey: publicKey }
     }
+
+    search = (options, query) => new Fuse(options, this.searchOptions).search(query);
 
     getPopUp() {
         const { account } = this.props.accountStore.current || {account: null};
@@ -388,11 +324,18 @@ export class AccountNavMenuItem extends Component {
     }
 
     render() {
-        const styling = this.props.full ? {display: 'flex', justifyContent: 'space-around', width: '100%', color: styles.navMenuHeader.color}: styles.navMenuHeader;
+        const fullStyling = {
+            display: 'flex', 
+            justifyContent: 'space-around', 
+            width: '100%', 
+            color: styles.navMenuHeader.color,
+            flexDirection: 'column'
+        };
+
         return (
-            <Menu.Menu as={Menu.Item} style={styling}>
+            <Menu.Menu as={this.props.full ? Grid.Row : Menu.Item} style={this.props.full ? fullStyling: styles.navMenuHeader}>
                 <Item.Header>
-                    <Header style={styles.navMenuHeader} as={this.props.full ? 'h1': 'h4'}>
+                    <Header style={styles.navMenuHeader} as={'h3'}>
                         <Header.Content>
                             {this.isReady() ? this.getPopUp() : null}
                             {this.isReady() ? this.getActive() : 'Loading Accounts'}
@@ -401,21 +344,17 @@ export class AccountNavMenuItem extends Component {
                 </Item.Header>
                 <Dropdown
                     style={{backgroundColor: styles.buttonLight.backgroundColor}}
-                    loading={this.state.loading || this.props.accountStore.loadingCache}
                     scrolling
                     autoComplete='on'
-                    inline
-                    button
-                    className='icon accounts-dropdown'
-                    floating
-                    labeled
-                    icon='user'
-                    options={this.props.accountStore.accounts.map(this.getOption)}
+                    fluid
                     onChange={this.setActive}
-                    search
-                    text='Select Account'
-                    header={<Header icon='key' content='Search by account name or public key' />}
-                />
+                    search={this.search}
+                    selection
+                    loading={this.state.loading || this.props.accountStore.loadingCache}
+                    className='icon accounts-dropdown'
+                    options={this.props.accountStore.accounts.map(this.getOption)}
+                    noResultsMessage='No accounts found matching search input'
+                    placeholder='Search by account name or public key' />
             </Menu.Menu>
         );
     }

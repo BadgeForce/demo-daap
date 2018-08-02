@@ -18,6 +18,22 @@ export const styles = {
         borderRadius: '50px',
         borderLeft: 0
     },
+    buttonLightNoBorder: {
+        backgroundColor: '#eef1fa',
+        color: '#2f51bf',
+    },
+    buttonKindaLightNoBorder: {
+        backgroundColor: 'rgb(102, 137, 243)',
+        color: 'white',
+    },
+    buttonDarkNoBorder: {
+        backgroundColor: '#3e63d7',
+        color: '#fff',
+    },
+    buttonReallyDarkNoBorder: {
+        backgroundColor: 'rgb(29, 72, 208)',
+        color: '#fff',
+    },
     menuButton: {
         backgroundColor: '#eef1fa',
         color: '#2f51bf',
@@ -47,6 +63,10 @@ export const styles = {
             },
             content: {
                 color: '#2f51bf'
+            }, 
+            contentHeader: {
+                color: '#2f51bf',
+                fontWeight: 700,
             }
         },
         issuance: {

@@ -1,0 +1,36 @@
+.instructions {
+    position: absolute;
+    bottom: 10px;
+    left: 20px;
+    overflow: hidden;
+    font-size: 14px
+}
+
+.instructions .key {
+    display: block;
+    width: 38px;
+    height: 38px;
+    float: left;
+    position: relative;
+}
+
+.instructions .key.key-up {
+    float: none;
+    margin-left: 39px;
+    margin-top: 20px;
+    background: url(../blockrain/assets/images/arrow-up.png) no-repeat black;
+    background-position: center;
+}
+
+.instructions .key.key-down {
+    background: url(../blockrain/assets/images/arrow-down.png) no-repeat black;
+    background-position: center;
+}
+.instructions .key.key-left {
+    background: url(../blockrain/assets/images/arrow-left.png) no-repeat black;
+    background-position: center;
+}
+.instructions .key.key-right {
+    background: url(../blockrain/assets/images/arrow-right.png) no-repeat black;
+    background-position: center;
+}

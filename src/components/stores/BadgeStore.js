@@ -27,14 +27,12 @@ export class BadgeStore extends ProtoDecoder {
     }
 
     storeBadge(key, badge) {
-        if(this.isValidProto(badge)) {
-            if(!this.isCached(key)) {
-                const entry = {
-                    key: key, 
-                    badge: badge
-                };
-                this.cache.push(entry);
-            }
+        if(!this.isCached(key)) {
+            const entry = {
+                key: key, 
+                badge: badge
+            };
+            this.cache.push(entry);
         } else {
             throw new Error('Invalid protobuffer data')
         }

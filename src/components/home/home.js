@@ -100,27 +100,22 @@ const menuItems = (props) => {
 }
 
 class TestnetStatus extends Component {
+    normal = 'Operating normally';
+    networkURI = ChainRestConfig.base
     constructor(props) {
         super(props);
-
         this.state = { 
             overlayFixed: false, 
             status: '', 
             networkURI:  ''
         }
-
-        this.normal = 'Operating normally';
-
         this.defaultItems = [   
-            <Menu.Item key='testnetstatus' icon={<Icon name='heartbeat' color='red'/>} content={this.getHealthStatus()} />,
             <Menu.Item key='testnetconn' icon={<Icon name='cubes' color='green' />} content={this.getChainURI()} />,           
+            <Menu.Item key='testnetstatus' icon={<Icon name='heartbeat' color='red'/>} content={this.getHealthStatus()} />,
         ];
     }
     componentDidMount() {
-        this.setState({
-            status: this.normal,
-            networkURI: ChainRestConfig.base
-        })    
+        this.setState({status: this.normal, networkURI: this.networkURI})    
     }
     stickOverlay = () => this.setState({ overlayFixed: true });
     unStickOverlay = () => this.setState({ overlayFixed: false });
@@ -133,17 +128,19 @@ class TestnetStatus extends Component {
     getChainURI = () => {
         return (
             <span className='menu_item_content'>
-                {`Network: ${this.state.networkURI}`}
+                {`Network: ${ChainRestConfig.base}`}
             </span> 
         )
     }
+
     getHealthStatus = () => {
         return (
             <span className='menu_item_content'>
-                {`Status: ${this.state.status}`}
+                Status: {this.normal}
             </span> 
         );
     }
+
     desktop = () => {
         const {overlayFixed} = this.state;
         return (
@@ -173,6 +170,7 @@ class TestnetStatus extends Component {
             </div>
         );
     }
+
     render() {
         switch (this.props.showStatus) {
             case 'desktop':
@@ -209,12 +207,24 @@ class NavbarMenu extends Component {
         );
     }
 
+    componentDidUpdate(prevProps) {
+        if(this.props.mobile) {
+            const redirect = this.props.location.state ? this.props.location.state.redirect : false;
+            if (this.props.location !== prevProps.location && !redirect) {
+                this.onRouteChanged();
+            }
+        }
+    }
+    
+    onRouteChanged = () => this.props.handleToggle();
+
     render() {
-        const items = menuItems({...this.props});        
+        const items = menuItems({...this.props}, true);        
         return (
             <Container fluid>
+                {this.props.mobile ? this.getTestNetStatus() : null}
                 {items}
-                {!this.props.mobile ? this.getSideBarBtn() : this.getTestNetStatus()}
+                {!this.props.mobile ? this.getSideBarBtn() : null }
             </Container>
         );
     }
@@ -325,22 +335,21 @@ class MobileContainer extends Component {
                     <Sidebar
                         as={Menu}
                         animation='push'
-                        inverted
                         vertical
                         style={{overflowX: 'hidden', height: 'inherit'}}
                         visible={sidebarOpened}
                     >
-                            <NavbarMenuWithRouter {...this.props} testnetStatusPosition='right' sideBarOpen={this.state.visible} toggleSideBar={this.toggle} />
+                        <NavbarMenuWithRouter handleToggle={this.handleToggle} {...this.props} testnetStatusPosition='right' sidebarOpen={sidebarOpened} />
                     </Sidebar>
 
                     <Sidebar.Pusher onClick={this.handlePusherClick}>
                         <Segment
+                            vertical
                             textAlign='center'
                             style={{
                                 minHeight: 350,
                                 padding: '1em 0em'
                             }}
-                            vertical
                             >
                             <Container>
                                 <Menu pointing secondary size='large'>
@@ -429,6 +438,7 @@ const fixedOverlayMenuStyle = {
     position: 'relative',
     right: 0,
     top: '40px',
+    zIndex: 1000000000
 }
 
 export default HomepageLayout

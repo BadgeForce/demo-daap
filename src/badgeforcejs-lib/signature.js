@@ -139,7 +139,6 @@ class Context {
 
 class Secp256k1Context extends Context {
     sign(message, privateKeyBytes) {
-        console.log('HASH MESSAGE', this.hash(message));
         const { signature } = secp256k1.sign(this.hash(message), privateKeyBytes)
         const encoded = this.encode(signature);
         return new Signature(encoded, this);

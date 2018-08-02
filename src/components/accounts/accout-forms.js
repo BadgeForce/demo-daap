@@ -1,9 +1,10 @@
 import React, { Component } from 'react';
-import { Form, Grid, Menu } from 'semantic-ui-react'
+import { Form, Grid, Menu, Button, Message } from 'semantic-ui-react'
 import { isValidForm, showFormErrors } from '../utils/form-utils';
 import { styles } from '../common-styles';
 import { AccountNavMenuItem } from './index';
 import 'react-datepicker/dist/react-datepicker.css';
+import { AccountManager } from '../../badgeforcejs-lib/account_manager';
 
 export class NewAccountForm extends Component {
     constructor(props) {
@@ -60,9 +61,9 @@ export class NewAccountForm extends Component {
 }
 
 export class RawPrivateKeyForm extends Component {
-    state = {privateKey: '', formErrors: [], formError: false, loading: false};
+    state = {privateKey: '', sucess: false, formErrors: [], formError: false, loading: false, error: {toggle: false, header: '', message: ''}};
     formLoading(loading) {
-        this.setState({loading});
+        this.setState({loading, formError: false, success: false, error: {toggle: false, header: '', message: ''}});
     }
     importRaw = async () => {
         this.formLoading(true);
@@ -73,11 +74,13 @@ export class RawPrivateKeyForm extends Component {
         if(validationResult.valid) {
             try {
                 await this.props.handleImportRaw(this.state.privateKey);
-                this.setState({loading: false, privateKey: '', formErrors: [], formError: false});
+                this.setState({loading: false, success: true, privateKey: '', formErrors: [], formError: false});
             } catch (error) {
                 this.setState(previousState => {
                     const {loading, formErrors, formError, ...state} = previousState;
-                    return {...state, loading: false, formErrors: [], formError: false};
+                    const errMsg = Object.values(new AccountManager().accountErrors).find(msg => msg === error.message)
+                    const err = {toggle: true, header: 'Could not import account at this time', message: errMsg || 'Try again'}
+                    return {...state, loading: false, formErrors: [], formError: false, error: err};
                 });
             }
         } else {
@@ -90,23 +93,28 @@ export class RawPrivateKeyForm extends Component {
 
     render(){
         return (
-            <Form loading={this.state.loading} size='large' style={{paddingTop: 25}} error={this.state.formError ? true : undefined}>
-                <Form.Field error={this.state.formError ? true : undefined} value={this.state.privateKey}  >
-                    <input style={styles.inputField} placeholder='Privatekey' 
-                    onChange={(e, privateKey) => this.setState({privateKey: e.target.value})} />
-                </Form.Field>
-                <Form.Group>
-                    <Form.Button style={styles.buttonDark} size='large' disabled={this.state.password === '' || this.state.privateKey === ''}  
-                        onClick={this.importRaw} content='Import Account' icon='key' labelPosition='right'/>
-                </Form.Group>
-                {this.state.formErrors.length > 0 ? showFormErrors(this.state.formErrors) : null}
-            </Form>
+            <Grid.Row>
+                <Form loading={this.state.loading} size='large' style={{paddingTop: 25}} error={this.state.formError ? true : undefined}>
+                    <Form.Field error={this.state.formError ? true : undefined} value={this.state.privateKey}  >
+                        <input style={styles.inputField} value={this.state.privateKey} placeholder='Privatekey' 
+                        onChange={(e, privateKey) => this.setState({privateKey: e.target.value})} />
+                    </Form.Field>
+                    <Form.Group>
+                        <Form.Button style={styles.buttonDark} size='large' disabled={this.state.password === '' || this.state.privateKey === ''}  
+                            onClick={this.importRaw} content='Import Account' icon='key' labelPosition='right'/>
+                    </Form.Group>
+                    {this.state.formErrors.length > 0 ? showFormErrors(this.state.formErrors) : null}
+                </Form>
+                {this.state.error.toggle ? <Message header={this.state.error.header} content={this.state.error.message} error />  : null }
+                {this.state.success ? <Message header='Account imported successfully' success />  : null } 
+            </Grid.Row>
         )
     }
 }
 export class AccountFileUpload extends Component {
-    state = {password: '', formErrors: [], formError: false, loading: false};
+    state = {password: '', success: false, formErrors: [], formError: false, loading: false, error: {toggle: false, header: '', message: ''}};
     importAccount = async (e) => {
+        this.setState({formError: false, success: false, loading: false, error: {toggle: false, header: '', message: ''}})
         const formErrorPredicates = [
             this.state.password === '' ? new Error('Password cannot be empty') : null
         ];
@@ -114,17 +122,20 @@ export class AccountFileUpload extends Component {
         if(validationResult.valid) {
             try {
                 await this.props.handleImportAccount(e, this.state.password);
-                this.setState({loading: false, password: '', formErrors: [], formError: false});
+                this.setState({loading: false, success: true, password: '', formErrors: [], formError: false});
             } catch (error) {
                 this.setState(previousState => {
                     const {loading, formErrors, formError, ...state} = previousState;
-                    return {...state, loading: false, formErrors: [], formError: false};
+
+                    const errMsg = Object.values(new AccountManager().accountErrors).find(msg => msg === error.message)
+                    const err = {toggle: true, header: 'Could not import account at this time', message: errMsg || 'Try again'}
+                    return {...state, success: false, loading: false, formErrors: [], formError: false, error: err};
                 });
             }
         } else {
             this.setState(previousState => {
                 const {loading, formErrors, formError, ...state} = previousState;
-                return {...state, loading: false, formErrors: validationResult.errors, formError: true};
+                return {...state, success: false, loading: false, formErrors: validationResult.errors, formError: true};
             });
         }
     }
@@ -133,17 +144,21 @@ export class AccountFileUpload extends Component {
     }
     render() {
         return(
-            <Form loading={this.state.loading} size='large' style={{paddingTop: 25}} error={this.state.formError ? true : undefined}>
-                <Form.Field error={this.state.formError ? true : undefined} value={this.state.password}>
-                    <input style={styles.inputField} type='password' placeholder='Enter your password'  onChange={(e, password) => this.setState({password: e.target.value})} />
-                </Form.Field>
-                <Form.Group>
-                    <Form.Button style={styles.buttonDark} disabled={this.state.password === ''} 
-                    onClick={() => document.getElementById('accountUpload').click()} size='large' content='Upload Account File' icon='upload' labelPosition='right'/>
-                </Form.Group>
-                {this.state.formErrors.length > 0 ? showFormErrors(this.state.formErrors) : null}
-                <input type="file" id="accountUpload" onChange={this.importAccount} style={{display: 'none'}} />  
-            </Form>
+            <Grid.Row>
+                <Form loading={this.state.loading} size='large' style={{paddingTop: 25}} error={this.state.formError ? true : undefined}>
+                    <Form.Field error={this.state.formError ? true : undefined} value={this.state.password}>
+                        <input style={styles.inputField} type='password' placeholder='Enter your password'  onChange={(e, password) => this.setState({password: e.target.value})} />
+                    </Form.Field>
+                    <Form.Group>
+                        <Form.Button style={styles.buttonDark} disabled={this.state.password === ''} 
+                        onClick={() => document.getElementById('accountUpload').click()} size='large' content='Upload Account File' icon='upload' labelPosition='right'/>
+                    </Form.Group>
+                    {this.state.formErrors.length > 0 ? showFormErrors(this.state.formErrors) : null}
+                    <input type="file" id="accountUpload" onChange={this.importAccount} style={{display: 'none'}} />  
+                </Form>
+                {this.state.error.toggle ? <Message header={this.state.error.header} content={this.state.error.message} error />  : null }
+                {this.state.success ? <Message header='Account imported successfully' success />  : null }    
+            </Grid.Row>
         );
     }
 }
@@ -151,11 +166,6 @@ export class AccountFileUpload extends Component {
 export class AccountOptions extends Component {
     constructor(props) {
         super(props);
-        this.options = [
-            {label: 'Upload Encrypted Account File', name: 'radioGroup', value: 'file'},
-            {label: 'Create New Account', name: 'radioGroup', value: 'form'},
-            {label: 'Import from Private Key', name: 'radioGroup', value: 'raw'},
-        ];
 
         this.state = {
             value: 'form'
@@ -202,29 +212,22 @@ export class AccountOptions extends Component {
         this.setState({ value })
     }
     renderOptions() {
-        return this.options.map((o, i) => {
-            return (
-                <Form.Radio
-                    label={o.label}
-                    name={o.name}
-                    value={o.value}
-                    checked={this.state.value === o.value}
-                    onChange={this.handleChange}
-                    key={i}
-                />
-            );
-        })
+        return (
+            <Button.Group widths={4} vertical={this.props.mobile || this.props.tablet ? true : false }>
+                <Button size='small' style={styles.buttonReallyDarkNoBorder} onClick={() => this.setState({value: 'form'})} content='Create New Account' active={this.state.value === 'form'} />
+                <Button size='small' style={styles.buttonDarkNoBorder} onClick={() => this.setState({value: 'file'})} content='Upload Encrypted Account File' active={this.state.value === 'file'} />
+                <Button size='small' style={styles.buttonKindaLightNoBorder} onClick={() => this.setState({value: 'raw'})} content='Import from Private Key' active={this.state.value === 'raw'} />
+            </Button.Group>
+        );
     }
 
     render() {
         return (
             <Grid.Column>
                 <Menu size='large' borderless style={{boxShadow: 'none', border: 'none'}}>
-                    <AccountNavMenuItem full />
+                    <AccountNavMenuItem full {...this.props} />
                 </Menu>
-                <Form.Group inline>
-                    {this.renderOptions()}
-                </Form.Group>                    
+                {this.renderOptions()}
                 {this.renderSelection()}
             </Grid.Column>
         );
