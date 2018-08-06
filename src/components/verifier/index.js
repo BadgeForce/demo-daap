@@ -5,6 +5,7 @@ import  bjs from '../../badgeforcejs-lib';
 import { toast, ToastContainer } from "react-toastify";
 import { Toaster } from '../utils/toaster';
 import { ThemeContext } from '../home/home';
+import { InfomaticModal, PublicKeyInfo, CredentialNameInfo, InstitutionIDInfo } from '../common/info';
 import { styles } from '../common-styles';
 import TextTruncate from 'react-text-truncate';
 import QrReader from 'react-qr-reader'
@@ -17,7 +18,7 @@ const ipfs = require('../../badgeforcejs-lib/config').Config.testnet.ipfs;
 const noimage = require('../../images/no-image.png');
 const moment = require('moment');
 
-const DATE_FORMAT = 'dddd, MMMM Do YYYY, h:mm:ss a';
+const DATE_FORMAT = 'dddd, MMMM Do YYYY';
 
 export const animateElem = async (element, animation, times) => {
     const node = ReactDOM.findDOMNode(element);
@@ -40,13 +41,10 @@ export class Issuance extends Component {
     truncate = (data, id) => {
         return (
             <TextTruncate
-                line={1}
+                line={2}
                 truncateText="…"
                 text={data}
-                textTruncateChild={<a href='' onClick={(e) => {
-                    e.preventDefault();
-                    document.getElementById(id).click()
-                }} >more</a>}
+                textTruncateChild={<PublicKeyInfo />}
             />
         );
     }
@@ -242,38 +240,10 @@ export class CredentialComponent extends Component {
         this.state = this.initialState;
         this.ipfsURI = `${ipfs}/${this.props.ipfs}`
         this.truncate = this.truncate.bind(this);
-        this.getPopUp = this.getPopUp.bind(this);
         this.verify = this.verify.bind(this);
         this.badgeforceVerifier = new bjs.BadgeforceVerifier((data) => {});
     }
 
-    truncate(data, id) {
-        return (
-            <TextTruncate
-                line={1}
-                truncateText="…"
-                text={data}
-                textTruncateChild={<a href='' onClick={(e) => {
-                    e.preventDefault();
-                    document.getElementById(`__badge__${id}`).click()
-                }} >more</a>}
-            />
-        );
-    }
-
-    getPopUp(data, header, id) {
-        return (
-            <Popup trigger={<a id={`__badge__${id}`} />} hideOnScroll on='click' position='top center'>
-                <Popup.Content>
-                    <Message size='large'>
-                        <Message.Header>{header}</Message.Header>
-                        <p style={{wordWrap:'break-word', maxWidth: 800}}>{data}</p>
-                    </Message>
-                </Popup.Content>
-            </Popup>
-        );
-    }
-    
     async verify() {
         this.setState({inProgress: true, icon: this.verifyIcons.loading});
         await sleep(2);
@@ -318,6 +288,125 @@ export class CredentialComponent extends Component {
             <Button style={styles.buttonDark} onClick={this.verify}>
                 <Button.Content className='animated infinite pulse' content='verify me!' />
             </Button>
+        );
+    }
+
+    truncate(text, child) {
+        return (
+            <TextTruncate
+                // style={{display: 'flex'}}
+                line={2}
+                truncateText=''
+                text={text}
+                textTruncateChild={child || ''}
+            />
+        );
+    }
+
+    renderData = (header, content, icon, textToTruncate) => {
+        const child = <InfomaticModal 
+            header={header}
+            content={content}
+            iconName={icon}
+            trigger={<p style={{color: '#569fff'}}>...more</p>}
+        />
+        return this.truncate(textToTruncate, child);
+    }
+
+    ipfs = () => {
+        const header = `IPFS Data Hash: ${this.props.ipfs}`
+        const content = (
+            <span>
+                <p>
+                    IPFS is a decentralized storage system that allows BadgeForce blockchain data to retain an optimal size, for 
+                    cheap access to reading and searching through the data. The decentralized nature of IPFS empowers users making 
+                    them the owners of their data.
+                </p>
+                <p style={{wordWrap: 'break-word'}}>
+                    <a target='blank' href={`https://ipfs.io/ipfs/${this.props.ipfs}`}>{this.props.ipfs}</a>
+                </p>
+            </span>
+        )
+        const icon = 'blocks'
+        return this.renderData(header, content, icon, this.props.ipfs)
+    }
+    mobileCred = (mobile) => {
+        const imageSrc = this.props.data.image || noimage;
+        return (
+            <Grid.Column style={{ width: '100%' }}>
+                <Segment style={{padding: 0, border: 0, boxShadow: 0}}>
+                    <Item style={{display: 'flex', flexDirection: 'column'}}>
+                        <Item.Header as='h3' style={{
+                            display: 'flex', 
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            marginBottom: 0}}>
+                            <Image floated='left' size='tiny' src={imageSrc} />
+                            <Header.Content style={styles.badge.fullCard.contentHeader} content={this.props.data.name} />
+                        </Item.Header>
+                        <Item.Description as='p' style={{...styles.badge.fullCard.contentHeader, fontSize: 'medium', textAlign: 'left'}}>
+                                    Date Earned: {moment.unix(this.props.data.dateEarned).format(DATE_FORMAT)}<br/>
+                                    Expires: {moment.unix(this.props.data.expiration).format(DATE_FORMAT)}
+                        </Item.Description>
+                        {!this.state.verified && !this.state.inProgress ? this.verifyBtn() : <Icon size='large' {...this.state.icon}/>}
+                        <Item.Content style={{fontSize: 'large', marginTop: '1em'}}>
+                            <List>
+                                <List.Item style={{display: 'flex', alignItems: 'baseline', fontSize: this.props.mobile ? 'medium' : null}}>
+                                    <Item.Header as='h5' style={styles.badge.fullCard.contentHeader}>
+                                        <Header.Content>
+                                        <Icon style={{display: 'flex', alignSelf: 'center', marginRight: 10, color: styles.badge.fullCard.content.color}} size='small' name='cubes' />
+                                        IPFS Hash: {this.ipfs()}
+                                        </Header.Content>
+                                    </Item.Header>
+                                </List.Item>
+                                <List.Item style={{display: 'flex', alignItems: 'baseline', fontSize: this.props.mobile ? 'medium' : null}}>
+                                    <Icon style={{display: 'flex', alignSelf: 'center', marginRight: 10, color: styles.badge.fullCard.content.color}} size='small' name='university' />
+                                    <span style={{marginRight: 6}}>
+                                        <Header style={styles.badge.fullCard.contentHeader} as='h5' content='School:'/>
+                                    </span> {this.props.data.school}
+                                </List.Item>
+
+                                <List.Item style={{display: 'flex', alignItems: 'baseline', fontSize: this.props.mobile ? 'medium' : null}}>
+                                    <Icon style={{display: 'flex', alignSelf: 'center', marginRight: 10, color: styles.badge.fullCard.content.color}} size='small' name='certificate' />
+                                    <span style={{marginRight: 6}}>
+                                        <Header style={styles.badge.fullCard.contentHeader} as='h5' content='Institution ID:'/>
+                                    </span>{this.props.data.institutionId}
+                                </List.Item>
+                                <List.Item style={{display: 'flex', alignItems: 'baseline', fontSize: this.props.mobile ? 'medium' : null}}>
+                                    <Icon style={{display: 'flex', alignSelf: 'center', marginRight: 10, color: styles.badge.fullCard.content.color}} size='small' name='user' />
+                                    <span style={{marginRight: 6}}>
+                                        <Header style={styles.badge.fullCard.contentHeader} as='h5' content='Issuer:'/>
+                                    </span> {this.truncate(this.props.data.issuer, `issuer-${this.props.data.issuer}`)}
+                                </List.Item>
+
+                                <List.Item style={{display: 'flex', alignItems: 'baseline', fontSize: this.props.mobile ? 'medium' : null}}>
+                                    <Icon style={{display: 'flex', alignSelf: 'center', marginRight: 10, color: styles.badge.fullCard.content.color}} size='small' name='graduation cap' />
+                                    <span style={{marginRight: 6}}>
+                                        <Header style={styles.badge.fullCard.contentHeader} as='h5' content='Recipient:'/>
+                                    </span> {this.truncate(this.props.data.recipient, this.props.data.recipient)}
+                                </List.Item>
+                                
+                                <List.Item style={{display: 'flex', alignItems: 'baseline', fontSize: this.props.mobile ? 'medium' : null}}>
+                                    <Icon style={{display: 'flex', alignSelf: 'center', marginRight: 10, color: styles.badge.fullCard.content.color}} size='small' name='pencil alternate' />
+                                    <span style={{marginRight: 6}}>
+                                        <Header style={styles.badge.fullCard.contentHeader} as='h5' content='Signature:'/>
+                                    </span> {this.truncate(this.props.signature, this.props.signature)}
+                                </List.Item>
+                                
+                            </List>
+                        </Item.Content>
+                        <Item.Extra style={{marginBottom: '1em'}}>
+                            {<CredentialCardActions 
+                                mobile={this.props.mobile}
+                                loading={this.state.inProgress}
+                                verify={{enabled: this.props.verifyAction && this.state.verified, callback: this.verify}}
+                                qrcode={{enabled: this.props.qrcodeAction, callback: console.log}}
+                                download={{enabled: !this.props.mobile && this.props.downloadAction, callback: this.downloadQRC}}
+                            />}
+                        </Item.Extra>
+                    </Item>
+                </Segment>
+            </Grid.Column> 
         );
     }
 
@@ -367,7 +456,6 @@ export class CredentialComponent extends Component {
                                 <span style={{marginRight: 6}}>
                                     <Header style={styles.badge.fullCard.contentHeader} as='h3' content='Issuer:'/>
                                 </span> {this.truncate(this.props.data.issuer, `issuer-${this.props.data.issuer}`)}
-                                {this.getPopUp(this.props.data.issuer, 'Public Key of the user who issued this badge', `issuer-${this.props.data.issuer}`)}        
                             </List.Item>
 
                             <List.Item style={{display: 'flex', alignItems: 'baseline', fontSize: this.props.mobile ? 'medium' : null}}>
@@ -375,7 +463,6 @@ export class CredentialComponent extends Component {
                                 <span style={{marginRight: 6}}>
                                     <Header style={styles.badge.fullCard.contentHeader} as='h3' content='Recipient:'/>
                                 </span> {this.truncate(this.props.data.recipient, this.props.data.recipient)}
-                                {this.getPopUp(this.props.data.recipient, 'Public Key of the user who received this badge', this.props.data.recipient)}        
                             </List.Item>
 
                             <List.Item style={{display: 'flex', alignItems: 'baseline', fontSize: this.props.mobile ? 'medium' : null}}>
@@ -383,7 +470,6 @@ export class CredentialComponent extends Component {
                                 <span style={{marginRight: 6}}>
                                     <Header style={styles.badge.fullCard.contentHeader} as='h3' content='Signature:'/>
                                 </span> {this.truncate(this.props.signature, this.props.signature)}
-                                {this.getPopUp(this.props.signature, 'Signature is data that proves a badge was issued by a certain issuer', this.props.signature)}      
                             </List.Item>
                             <List.Item style={{display: 'flex', alignItems: 'baseline', fontSize: this.props.mobile ? 'medium' : null}}>
                                 <Icon style={{display: 'flex', alignSelf: 'center', marginRight: 10, color: styles.badge.fullCard.content.color}} size='small' name='cubes' />
@@ -391,7 +477,6 @@ export class CredentialComponent extends Component {
                                     <Header style={styles.badge.fullCard.contentHeader} as='a' target='blank' href={this.ipfsURI} content='IPFS Hash:'/>
                                 </span>
                                 {this.truncate(this.props.ipfs, this.props.ipfs)}
-                                {this.getPopUp(this.props.ipfs, 'Link to the core data of this badge in decentralized storage', this.props.ipfs)}  
                             </List.Item>
                         </List>
                     </Card.Description>
@@ -468,13 +553,21 @@ export class CredentialComponent extends Component {
             </Card>
         );
     }
-
     render() {
-        return this.props.full ? this.showFullContent() : this.showPreview();
+        if(this.props.full) {
+            if(this.props.mobile) {
+                return this.mobileCred()
+            }
+            return this.showFullContent()
+        } else {
+            return this.showPreview();
+        }
     }
 }
 export class Credential extends Component {
     render() {
+        console.log(this.props.context)
+
         return (
             <ThemeContext.Consumer>
                 {theme => <CredentialComponent {...this.props} mobile={theme} /> }
@@ -695,6 +788,9 @@ export class Verifier extends Component {
     }
 
     renderRequirements() {
+        if(this.props.mobile) {
+            return null
+        }
         return (
             <List celled>
                 {this.state.requrements.map((requirement, i) => {
@@ -716,15 +812,25 @@ export class Verifier extends Component {
         return (
             <Form size='large' error={this.state.formError ? true : undefined}>
                 <ToastContainer autoClose={5000} />
-                <Form.Field style={styles.inputField} error={this.state.formError ? true : undefined} value={this.state.recipient}>
-                    <input style={styles.inputField} placeholder='Recipient Public Key' onChange={(e) => this.setState({recipient: e.target.value})}/>
-                </Form.Field>
-                <Form.Field style={styles.inputField} error={this.state.formError ? true : undefined} value={this.state.name}>
-                    <input style={styles.inputField} placeholder='Credential Name' onChange={(e) => this.setState({name: e.target.value})}/>
-                </Form.Field>
-                <Form.Field style={styles.inputField} error={this.state.formError ? true : undefined} value={this.state.institutionId}>
-                    <input disabled style={styles.inputField} placeholder='bf-edu-123' onChange={(e) => this.setState({institutionId: e.target.value})} />
-                </Form.Field>
+                <Grid.Row style={{display: 'flex', alignItems: 'center'}}>
+                    <Form.Field style={{...styles.inputField, width: '100%'}} error={this.state.formError ? true : undefined} value={this.state.recipient}>
+                        <input style={styles.inputField} placeholder='Recipient Public Key' onChange={(e) => this.setState({recipient: e.target.value})}/>
+                    </Form.Field>
+                    <PublicKeyInfo />
+                </Grid.Row>
+
+                <Grid.Row style={{display: 'flex', alignItems: 'center'}}>
+                    <Form.Field style={{...styles.inputField, width: '100%'}} error={this.state.formError ? true : undefined} value={this.state.name}>
+                        <input style={styles.inputField} placeholder='Credential Name' onChange={(e) => this.setState({name: e.target.value})}/>
+                    </Form.Field>
+                    <CredentialNameInfo />
+                </Grid.Row>
+                <Grid.Row style={{display: 'flex', alignItems: 'center'}}>
+                    <Form.Field style={{...styles.inputField, width: '100%'}} error={this.state.formError ? true : undefined} value={this.state.institutionId}>
+                        <input disabled style={styles.inputField} placeholder='bf-edu-123' onChange={(e) => this.setState({institutionId: e.target.value})} />
+                    </Form.Field>
+                    <InstitutionIDInfo />
+                </Grid.Row>
                 <Button.Group vertical={this.props.mobile || this.props.tablet ? true : false } fluid>
                     <Button size='small' ref={this.verifyButtonRef} disabled={this.state.loading} style={styles.buttonLight} onClick={this.handleVerify} content='Verify Using Form' icon='check' labelPosition='left'/>
                     <Button.Or />
@@ -754,11 +860,28 @@ export class Verifier extends Component {
 
         return null;
     }
+    header = () => {
+        if(!this.props.mobile) {
+            return (
+                <Header.Content as='h1' className='content-header' content={this.state.heading} />
+            );
+        }
 
+        return null
+    }                
+    subheader = () => {
+        if(!this.props.mobile) {
+            return (
+                <Header.Content as='h3' className='content-subheader' content={this.state.descscription} />            
+            );
+        }
+
+        return null
+    }
     render() {
         return (
             <Segment style={{
-                padding: '4em 0em'
+                padding: this.props.mobile ? '1em 0em' : '4em 0em'
             }} vertical>
                 <Dimmer active={this.state.loading} inverted>
                     {this.state.loading ? 
@@ -771,8 +894,8 @@ export class Verifier extends Component {
                         <Grid.Column width={6}>
                             <Item>
                                 <Item.Header textAlign='left' as={Header}>
-                                    <Header.Content as='h1' className='content-header' content={this.state.heading} />
-                                    <Header.Content as='h3' className='content-subheader' content={this.state.descscription} />
+                                    {this.header()}
+                                    {this.subheader()}
                                 </Item.Header>                                    
                                 <Item.Description>
                                     {this.renderRequirements()}   

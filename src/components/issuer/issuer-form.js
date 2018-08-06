@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { Form, Message, Grid, Segment, Item, Header, Button, Popup } from 'semantic-ui-react'
 import  { AccountManager } from '../../badgeforcejs-lib/account_manager';
 import  { Transactor } from '../../badgeforcejs-lib/transactor';
+import { InfomaticModal, PublicKeyInfo, CredentialNameInfo, InstitutionIDInfo } from '../common/info';
 import DatePicker from 'react-datepicker';
 import { Toaster } from '../utils/toaster';
 import { toast } from "react-toastify";
@@ -50,15 +51,24 @@ export class RevokeForm extends Component {
     render() {
         return (
             <Form loading={this.state.loading} size='large' style={{paddingTop: 25}} error={this.state.formError ? true : undefined}>
-                <Form.Field error={this.state.formError ? true : undefined}>
-                    <input style={styles.inputField} value={this.state.recipient} placeholder='Recipient Public Key' onChange={(e) => this.setState({recipient: e.target.value})} />
-                </Form.Field>
-                <Form.Field error={this.state.formError ? true : undefined}>
-                    <input style={styles.inputField} value={this.state.credentialName}  placeholder='Credential Name' onChange={(e) => this.setState({credentialName: e.target.value})} />
-                </Form.Field>
-                <Form.Field value={this.state.institutionId}>
-                    <input style={styles.inputField} disabled placeholder={this.state.institutionId} onChange={(e) => this.setState({institutionId: e.target.value})} />
-                </Form.Field>
+                <Grid.Row style={{display: 'flex', alignItems: 'center'}}>
+                    <Form.Field style={{width: '100%'}} error={this.state.formError ? true : undefined}>
+                        <input style={styles.inputField} value={this.state.recipient} placeholder='Recipient Public Key' onChange={(e) => this.setState({recipient: e.target.value})} />
+                    </Form.Field>
+                    <PublicKeyInfo />
+                </Grid.Row>
+                <Grid.Row style={{display: 'flex', alignItems: 'center'}}>
+                    <Form.Field style={{width: '100%'}} error={this.state.formError ? true : undefined}>
+                        <input style={styles.inputField} value={this.state.credentialName}  placeholder='Credential Name' onChange={(e) => this.setState({credentialName: e.target.value})} />
+                    </Form.Field>
+                    <CredentialNameInfo />
+                </Grid.Row>
+                <Grid.Row style={{display: 'flex', alignItems: 'center'}}>
+                    <Form.Field style={{width: '100%'}} value={this.state.institutionId}>
+                        <input style={styles.inputField} disabled placeholder={this.state.institutionId} onChange={(e) => this.setState({institutionId: e.target.value})} />
+                    </Form.Field>
+                    <InstitutionIDInfo />
+                </Grid.Row>
                 <Form.Group>
                     <Form.Button disabled={this.state.credentialName === '' || this.state.recipient === ''} style={styles.buttonDark} onClick={this.handleRevoke} size='large' content='Revoke' icon='ban' labelPosition='right'/>
                 </Form.Group>
@@ -140,20 +150,20 @@ export class IssueForm extends Component {
         this.setState({ value })
     }
 
+    issueBtn = () => <Button size='small' style={styles.buttonReallyDarkNoBorder} onClick={() => this.setState({value: 'issue'})} content='issue a credential' active={this.state.value === 'issue'} />
+    revokeBtn = () => <Button size='small' style={styles.buttonDarkNoBorder} onClick={() => this.setState({value: 'revoke'})} content='revoke a credential' active={this.state.value === 'revoke'} />
+    issuanceBtn = () => <Button size='small' style={styles.buttonKindaLightNoBorder} onClick={() => this.setState({value: 'issuance'})} content='view past issued credentials' active={this.state.value === 'issuance'} />
+
     renderOptions() {
-        return this.options.map((o, i) => {
-            return (
-                <Form.Radio
-                    label={o.label}
-                    name={o.name}
-                    value={o.value}
-                    checked={this.state.value === o.value}
-                    onChange={this.handleChange}
-                    key={i}
-                />
-            );
-        })
+        return (
+            <Button.Group widths={4} vertical={this.props.mobile || this.props.tablet ? true : false }>
+                {this.state.value === 'issue' ? null : this.issueBtn()}
+                {this.state.value === 'revoke' ? null : this.revokeBtn()}
+                {this.state.value === 'issuance' ? null : this.issuanceBtn()}
+            </Button.Group>
+        );
     }
+
 
     renderSelection() {
         switch (this.state.value) {
@@ -319,21 +329,21 @@ export class IssueForm extends Component {
                     <Form.Field style={{width: '100%'}}  error={this.state.formError ? true : undefined} value={this.state.recipient} >
                         <input style={styles.inputField} value={this.state.recipient} placeholder='Recipient Public Key' onChange={(e) => this.setState({recipient: e.target.value})} />
                     </Form.Field>
-                    {this.getInfoPopup('This is the public address of the user you want to issue the credential to')}
+                    <PublicKeyInfo />
                 </Grid.Row>
 
                 <Grid.Row style={{display: 'flex', alignItems: 'center'}}>
                     <Form.Field style={{width: '100%'}} error={this.state.formError ? true : undefined} value={this.state.name}>
                         <input style={styles.inputField} value={this.state.name} placeholder='Credential Name' onChange={(e) => this.setState({name:  e.target.value})} />
                     </Form.Field>
-                    {this.getInfoPopup('Enter a name for this credential')}
+                    <CredentialNameInfo />
                 </Grid.Row>
 
                 <Grid.Row style={{display: 'flex', alignItems: 'center'}}>
                     <Form.Field style={{width: '100%'}}>
                         <input disabled style={{...styles.inputField, color: '#0000'}}  placeholder={this.demoCred.institutionId} />
                     </Form.Field>
-                    {this.getInfoPopup('For demo purposes all credentials will be issued using a predefined institution id')}
+                    <InstitutionIDInfo />
                 </Grid.Row>
                 <Form.Group widths='equal'>
                     <Form.Field error={this.state.formError ? true : undefined} style={{display: 'flex', alignItems: 'flex-end', justifyContent: 'center'}}>
@@ -357,6 +367,9 @@ export class IssueForm extends Component {
     preview = () => <Credential full={false} data={{...this.demoCred, issuer: this.props.accountStore.current.account.publicKey, ...this.state}} />
 
     renderInfoComponent() {
+        if(this.props.mobile) {
+            return null
+        }
         switch (this.state.value) {
             case 'issue':
                 return this.preview()
@@ -372,7 +385,7 @@ export class IssueForm extends Component {
     render() {
         return (
             <Segment style={{
-                padding: '4em 0em'
+                padding: this.props.mobile ? '1em 0em' : '4em 0em'
             }} vertical>
                 <Grid container stackable>
                     <Grid.Row >
@@ -380,8 +393,8 @@ export class IssueForm extends Component {
                             <Item>
                                 {/* <Form.Button size='large' content='TEST ' onClick={this.test} /> */}
                                 <Item.Header textAlign='left' as={Header}>
-                                    <Header.Content as='h1' className='content-header' content={`${this.state.value.charAt(0).toUpperCase()}${this.state.value.substring(1)}`} />
-                                </Item.Header>  
+                                    <Header.Content as={this.props.mobile ? 'h3' : 'h1'} className='content-header' content={`${this.state.value.charAt(0).toUpperCase()}${this.state.value.substring(1)}`} />
+                                </Item.Header>
                                 {this.renderInfoComponent()}
                             </Item>
                         </Grid.Column>

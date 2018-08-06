@@ -7,7 +7,7 @@ export class Issuer extends Component {
     render() {
         return (
             <Grid.Column>
-                <IssueForm />
+                <IssueForm mobile={this.props.mobile} />
             </Grid.Column>
         );
     }

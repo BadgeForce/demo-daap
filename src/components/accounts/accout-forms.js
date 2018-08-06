@@ -211,12 +211,17 @@ export class AccountOptions extends Component {
     handleChange(e, { value }) {
         this.setState({ value })
     }
+
+    createAccountBtn = () => <Button size='small' style={styles.buttonReallyDarkNoBorder} onClick={() => this.setState({value: 'form'})} content='Create New Account' active={this.state.value === 'form'} />
+    uploadAccountBtn = () => <Button size='small' style={styles.buttonDarkNoBorder} onClick={() => this.setState({value: 'file'})} content='Upload Encrypted Account File' active={this.state.value === 'file'} />
+    rawAccountBtn = () => <Button size='small' style={styles.buttonKindaLightNoBorder} onClick={() => this.setState({value: 'raw'})} content='Import from Private Key' active={this.state.value === 'raw'} />
+
     renderOptions() {
         return (
             <Button.Group widths={4} vertical={this.props.mobile || this.props.tablet ? true : false }>
-                <Button size='small' style={styles.buttonReallyDarkNoBorder} onClick={() => this.setState({value: 'form'})} content='Create New Account' active={this.state.value === 'form'} />
-                <Button size='small' style={styles.buttonDarkNoBorder} onClick={() => this.setState({value: 'file'})} content='Upload Encrypted Account File' active={this.state.value === 'file'} />
-                <Button size='small' style={styles.buttonKindaLightNoBorder} onClick={() => this.setState({value: 'raw'})} content='Import from Private Key' active={this.state.value === 'raw'} />
+                {this.state.value === 'form' ? null : this.createAccountBtn()}
+                {this.state.value === 'file' ? null : this.uploadAccountBtn()}
+                {this.state.value === 'raw' ? null : this.rawAccountBtn()}
             </Button.Group>
         );
     }

@@ -17,7 +17,7 @@ export const AccountsComponent = (props) => {
     )
 }
 
-export class AccountsWrapper extends Component {
+export class Wrapper extends Component {
     constructor(props) {
         super(props);
         const heading = 'Accounts';
@@ -30,18 +30,26 @@ export class AccountsWrapper extends Component {
             },
         }
     }
+    header = (mobile) => {
+            return (
+                <Header.Content as={mobile ? 'h3' : 'h1'} className='content-header' content={this.state.heading} />
+            );
+    }                
+    subheader = (mobile) => {
+            return (
+                <Header.Content as={mobile ? 'h4' : 'h3'} className='content-subheader' content={this.state.descscription} />            
+            );
+    } 
     render() {
         return (
-            <Segment style={{
-                padding: '4em 0em'
-            }} vertical>
+            <Segment style={{padding: this.props.mobile ? '1em 0em' : '4em 0em'}} vertical>
                 <Grid container stackable>
                     <Grid.Row >
                         <Grid.Column width={6}>
                             <Item>
                                 <Item.Header textAlign='left' as={Header}>
-                                    <Header.Content as='h1' className='content-header' content={this.state.heading} />
-                                    <Header.Content as='h3' className='content-subheader' content={this.state.descscription} />
+                                    {this.header(this.props.mobile)}
+                                    {this.subheader(this.props.mobile)}
                                 </Item.Header>                                                          
                             </Item>
                         </Grid.Column>
@@ -54,3 +62,11 @@ export class AccountsWrapper extends Component {
         )
     }
 }
+
+export const AccountsWrapper = (props) => {
+    return(
+        <ThemeContext.Consumer>
+            {mobile => <Wrapper mobile={mobile} />}
+        </ThemeContext.Consumer>
+    );
+} 

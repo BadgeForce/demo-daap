@@ -15,7 +15,7 @@ class NoAccounts extends Component {
         header: 'Looks like an account could not be detected or haven\'t been loaded'
     }
 
-    state = {timeLeft: 5}
+    state = {timeLeft: 3}
 
     componentDidMount() {
         if(this.props.accountStore.current === null) this.startCountDown();
@@ -26,6 +26,9 @@ class NoAccounts extends Component {
         while(timeLeft !== 0) {
             await sleep(1);
             timeLeft--;
+            if(this.state.redirectDone) {
+                return;
+            }
             this.setState({timeLeft})
         }
 
@@ -33,19 +36,18 @@ class NoAccounts extends Component {
     }
 
     redirect = () => {
+        this.setState({redirectDone: true});
         this.props.history.push("/accounts", { from: this.props.location, redirect: true })
     }
 
     render() {
         return (
-            <Segment style={{
-                padding: '4em 0em'
-            }} vertical>
+            <Segment style={{padding: this.props.mobile ? '1em 0em' : '4em 0em'}} vertical>
                 <Grid container stackable>
                     <Grid.Row >
                         <Grid.Column floated='right' width={8}>
                             <Form.Group>
-                                <Form.Button style={styles.buttonDark} onClick={this.redirect} size='large' content={`Redirecting in ${this.state.timeLeft}`} icon='user' labelPosition='right'/>
+                                <Form.Button disabled={this.state.timeLeft > 0} style={styles.buttonDark} onClick={this.redirect} size='large' content={`Redirecting in ${this.state.timeLeft}`} icon='user' labelPosition='right'/>
                             </Form.Group>
                         </Grid.Column>
                         <Grid.Column width={6}>

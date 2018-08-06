@@ -7,6 +7,8 @@ import {observer, inject} from 'mobx-react';
 import { sleep } from '../verifier';
 import { Toaster } from '../utils/toaster';
 import { AccountOptions } from './accout-forms';
+import { InfomaticModal } from '../common/info';
+
 import { styles } from '../common-styles';
 import { 
     Grid, Confirm, Input, Item, Menu, Button, 
@@ -289,39 +291,40 @@ export class AccountNavMenuItem extends Component {
 
     getActive() {
         const { account } = this.props.accountStore.current || {account: null};
-        const text = account ? `Active: ${account.name || account.publicKey}` : 'No accounts found';
+        let text, content; 
+        if(account) {
+            text = account.name || account.publicKey
+            const name = account.name ? <p>Name: account.name}</p> : null
+            content = <span>
+                        {name}
+                        <p style={{wordWrap: 'break-word'}}>Public Key: {account.publicKey}</p>
+                    </span>
+        } 
+        else {
+            text = 'No accounts found';
+            content = 'Looks like we could not detect any accounts';
+        }
         return (
             <TextTruncate
-                style={{cursor: 'pointer'}}
-                onClick={(e) => {
-                    e.preventDefault();
-                    document.getElementById(this.props.full ? "full__accountPopup__": "__accountPopup__").click()
-                }}
+                style={{display: 'flex'}}
                 line={2}
-                truncateText="…"
+                truncateText=''
                 text={text}
+                textTruncateChild={<InfomaticModal 
+                    iconName='key'
+                    header='Active Account'
+                    content={content}
+                    trigger={<p style={{color: '#569fff'}}>...more</p>}
+                />}
             />
         );
     }
 
     getOption({account: {name, publicKey}}) {
-        return { key: publicKey, text: name || `${publicKey.substring(0, 15)}...`, value: publicKey, name, publickey: publicKey }
+        return { key: publicKey, text: name || publicKey, value: publicKey, name, publickey: publicKey }
     }
 
     search = (options, query) => new Fuse(options, this.searchOptions).search(query);
-
-    getPopUp() {
-        const { account } = this.props.accountStore.current || {account: null};
-        return (
-            <Popup 
-                trigger={<a id={this.props.full ? "full__accountPopup__": "__accountPopup__"} />} 
-                hideOnScroll 
-                content={account ? account.publicKey : ''} 
-                on='click'
-                position='top center'
-            />
-        );
-    }
 
     render() {
         const fullStyling = {
@@ -333,17 +336,14 @@ export class AccountNavMenuItem extends Component {
         };
 
         return (
-            <Menu.Menu as={this.props.full ? Grid.Row : Menu.Item} style={this.props.full ? fullStyling: styles.navMenuHeader}>
-                <Item.Header>
-                    <Header style={styles.navMenuHeader} as={'h3'}>
-                        <Header.Content>
-                            {this.isReady() ? this.getPopUp() : null}
-                            {this.isReady() ? this.getActive() : 'Loading Accounts'}
-                        </Header.Content>
-                    </Header>
+            <Menu.Menu as={this.props.full ? Grid.Row : Grid.Column} style={this.props.full ? fullStyling: styles.navMenuHeader}>
+                <Item.Header as={'h3'}>
+                    <Header.Content style={{...styles.navMenuHeader, width: '100%'}}>
+                        {this.isReady() ? this.getActive() : 'Loading Accounts'}
+                    </Header.Content>
                 </Item.Header>
                 <Dropdown
-                    style={{backgroundColor: styles.buttonLight.backgroundColor}}
+                    style={{backgroundColor: styles.buttonLight.backgroundColor, wordBreak: 'break-word'}}
                     scrolling
                     autoComplete='on'
                     fluid

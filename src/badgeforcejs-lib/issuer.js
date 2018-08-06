@@ -109,12 +109,12 @@ export class IssuanceStoreManager extends TransactionStoreManager {
         super(publicKey);
         this.issuer = publicKey
         this.namespace = namespacing.partialLeafAddress(this.issuer, namespacing.ISSUANCE);
-        this.loadIssuances();
+        // this.loadIssuances();
     }
 
     async loadIssuances() {
         try {
-            const { data } = await this.queryState(this.namespace);
+            const { data } = await this.queryState(this.namespace, 0);
             if(data.length === 0) {
                 return []
             } 

@@ -53,3 +53,9 @@ body::-webkit-scrollbar-track {
 	color: #5e78cd;
 	margin-top: 0;
 }
+
+.badge-slider {
+	display: flex;
+    padding: 0;
+    margin: 0;
+}

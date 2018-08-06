@@ -32,7 +32,7 @@ export class RestClient {
     async queryIPFS(hash) {
         try {
             const uri = `${this.ipfsURI}/${hash}`;
-            const opts = {times: 3};
+            const opts = {times: 2};
             const method = async (callback) => {
                 try {
                     const response = await window.fetch(new Request(uri, {method: 'GET', headers: {'Content-Type': 'application/json'}}));
@@ -49,10 +49,10 @@ export class RestClient {
         }
     }
 
-    async queryState(address) {
+    async queryState(address, retries) {
         try {
             const uri = `${this.stateURI}?address=${address}`;
-            const opts = {times: 3};
+            const opts = {times: 2};
             const method = async (callback) => {
                 try {
                     const response = await window.fetch(new Request(uri, {method: 'GET', headers: {'Content-Type': 'application/json'}}));

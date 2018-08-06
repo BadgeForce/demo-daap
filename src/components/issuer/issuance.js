@@ -74,24 +74,25 @@ export class Issuances extends Component {
         return {
             prop: () => this.props.accountStore.current, 
             action: async current => {
-                await this.loadIssuances();
+                // await this.loadIssuances();
             }
         };
     }
 
     async loadIssuances() {
         this.setState({issuances: [],active: null, key: null, loading: {toggle: true, message: 'Loading Issuances'}});
-        try {
-            const issuances = await this.props.accountStore.current.loadIssuances();
-            this.setState({issuances, loading: {toggle: false, message: ''}});
-        } catch (error) {
-            console.log(error);
-            this.setState({loading: {toggle: false, message: ''}});
-        }
+        // try {
+        //     const issuances = await this.props.accountStore.current.loadIssuances();
+        //     this.setState({issuances, loading: {toggle: false, message: ''}});
+        // } catch (error) {
+        //     console.log(error);
+        //     this.setState({loading: {toggle: false, message: ''}});
+        // }
+        this.setState({loading: {toggle: false, message: ''}});
     }
 
     async componentDidMount() {
-        await this.loadIssuances();
+        // await this.loadIssuances();
         const accountChange = this.accountChangeReaction();
         this.disposeAccountChange = reaction(accountChange.prop, accountChange.action);
     }

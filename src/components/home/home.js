@@ -13,9 +13,11 @@ import {
     Sidebar,
     Visibility,
     Item,
-    Header
+    Header,
+    Form
 } from 'semantic-ui-react'
 import  wrappers from './wrappers';
+import { HomeComponent } from './landing-page';
 import { AccountAuth } from '../accounts/auth';
 import { AccountNavMenuItem } from '../accounts';
 import { TransactionNavList } from '../transactions';
@@ -31,48 +33,6 @@ import 'react-toastify/dist/ReactToastify.css';
 /* Heads up! HomepageHeading uses inline styling, however it's not the best practice. Use CSS or styled components for
  * such things.
  */
-class HomepageHeading extends Component {
-    constructor(props) {
-        super(props);
-        this.state = {
-            networkURI: 'https://testnet.badgeforce.io',
-            status: 'Operating normally'
-        }
-    }
-    render() {
-        const {mobile, tablet} = this.props;
-        return (
-            <Grid container stackable verticalAlign='middle'>
-                <Grid.Row>
-                    <Grid.Column>
-                        <Grid.Row>
-                            <Item
-                                style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                flexDirection: mobile || tablet
-                                    ? 'column'
-                                    : 'row'
-                                }}>                  
-                                <Item.Image size='large' src={headerimage}/>
-                                <Item.Content verticalAlign='middle'>
-                                    <Item.Header className='content-header' as='h2'>
-                                        Official Testnet BadgeForce DAAP. Issue, View and Verify credentials with anyone!
-                                    </Item.Header>
-                                </Item.Content>
-                            </Item>
-                        </Grid.Row>
-                    </Grid.Column>
-                </Grid.Row>
-            </Grid>
-        );
-    }
-}
-
-HomepageHeading.propTypes = {
-    mobile: PropTypes.bool, 
-    tablet: PropTypes.bool
-}
 
 const menuItems = (props) => {
     return (
@@ -110,8 +70,8 @@ class TestnetStatus extends Component {
             networkURI:  ''
         }
         this.defaultItems = [   
-            <Menu.Item key='testnetconn' icon={<Icon name='cubes' color='green' />} content={this.getChainURI()} />,           
-            <Menu.Item key='testnetstatus' icon={<Icon name='heartbeat' color='red'/>} content={this.getHealthStatus()} />,
+            <Menu.Item key='testnetconn' icon={<Icon size='large' name='cubes' color='green' />} content={this.getChainURI()} />,           
+            <Menu.Item key='testnetstatus' icon={<Icon size='large' name='heartbeat' color='red'/>} content={this.getHealthStatus()} />,
         ];
     }
     componentDidMount() {
@@ -201,9 +161,17 @@ class NavbarMenu extends Component {
 
     getTestNetStatus = () => {
         return (
-            <Menu.Item key='tstatus'>
+            <Menu.Menu key='tstatus' style={{padding: '1em'}}>
                 <TestnetStatus {...this.props} />
-            </Menu.Item>
+            </Menu.Menu>
+        );
+    }
+
+    mobileHeader = () => {
+        return(
+            <Menu.Item 
+                icon={<Icon onClick={this.props.handleToggle} style={{color: styles.buttonDarkNoBorder.backgroundColor}} size='large' name='close' />}
+                content={<Image verticalAlign='middle' src={logo} />} />
         );
     }
 
@@ -222,22 +190,47 @@ class NavbarMenu extends Component {
         const items = menuItems({...this.props}, true);        
         return (
             <Container fluid>
-                {this.props.mobile ? this.getTestNetStatus() : null}
+                {this.props.mobile ? this.mobileHeader() : null}
                 {items}
+                {this.props.mobile ? this.getTestNetStatus() : null}
                 {!this.props.mobile ? this.getSideBarBtn() : null }
             </Container>
         );
     }
 }
+
+class MobileNavItems extends Component {
+    getItem = () => {
+        switch (this.props.location.pathname) {
+            case '/verifier':
+                return {name: 'check', content: 'Verifier'}
+            case '/issuer':
+                return {name: 'university', content: 'Issuer'}
+            case '/accounts':
+                return {name: 'user', content: 'Accounts'}
+            case '/badges':
+                return {name: 'shield', content: 'Badges'}
+            default:
+                return {name: 'shield', content: 'BadgeForce'}
+        }
+    }
+    render() {
+        const {name, content} = this.getItem();
+        return(
+            <Menu.Item active>
+                <span className='menu_item_content'><Icon name={name} />{content}</span>    
+            </Menu.Item>
+        );
+    }
+}
+
 const NavbarMenuWithRouter = withRouter(NavbarMenu)
-
-
-
+const HomeWithRouter = withRouter(HomeComponent)
+const MobileItemsWithRouter = withRouter(MobileNavItems);
 /* Heads up!
  * Neither Semantic UI nor Semantic UI React offer a responsive navbar, however, it can be implemented easily.
  * It can be more complicated, but you can create really flexible markup. fc0dd96593394b5727d68bf21579117db6a9178e1277e25793f80eb4da1e6904
  */
-
 export const ThemeContext = React.createContext('mobile');
 class DefaultContainer extends Component {
     static propTypes = {
@@ -296,7 +289,7 @@ class DefaultContainer extends Component {
                     </Sidebar>
                     <Sidebar.Pusher>
                         <div>
-                            <HomepageHeading />
+                            <Segment style={{borderBottom: 0}} vertical />
                             <ThemeContext.Provider value={this.props.mobile || this.props.tablet}>                                    
                                 {children}
                             </ThemeContext.Provider>
@@ -313,7 +306,7 @@ DefaultContainer.propTypes = {
 }
 
 class MobileContainer extends Component {
-    state = {}
+    state = {menuFixed: false}
 
     handlePusherClick = () => {
         const {sidebarOpened} = this.state
@@ -324,19 +317,22 @@ class MobileContainer extends Component {
     handleToggle = () => this.setState({
         sidebarOpened: !this.state.sidebarOpened
     })
+    stickTopMenu = () => this.setState({ menuFixed: true });
+    unStickTopMenu = () => this.setState({ menuFixed: false });
 
     render() {
         const {children} = this.props
-        const {sidebarOpened} = this.state
+        const {sidebarOpened, menuFixed} = this.state
 
         return (
             <Responsive {...Responsive.onlyMobile}>
                 <Sidebar.Pushable>
                     <Sidebar
+                        style={{overflowX: 'hidden', boxShadow: 'none', border: 'none'}}
                         as={Menu}
-                        animation='push'
+                        animation='overlay'
                         vertical
-                        style={{overflowX: 'hidden', height: 'inherit'}}
+                        direction='top'
                         visible={sidebarOpened}
                     >
                         <NavbarMenuWithRouter handleToggle={this.handleToggle} {...this.props} testnetStatusPosition='right' sidebarOpen={sidebarOpened} />
@@ -348,17 +344,17 @@ class MobileContainer extends Component {
                             textAlign='center'
                             style={{
                                 minHeight: 350,
-                                padding: '1em 0em'
+                                padding: '0em 0em',
                             }}
                             >
-                            <Container>
-                                <Menu pointing secondary size='large'>
-                                    <Menu.Item onClick={this.handleToggle}>
-                                        <Icon size='large' name='sidebar'/>
-                                    </Menu.Item>
-                                </Menu>
-                            </Container>
-                            <HomepageHeading mobile/>
+                            <Menu
+                                pointing secondary size='large'
+                                style={menuStyle}> 
+                                <Menu.Item>
+                                    <Icon onClick={this.handleToggle} style={{color: styles.buttonDarkNoBorder.backgroundColor}} size='large' name={this.state.sidebarOpened ? 'close' : 'sidebar'} />
+                                </Menu.Item>
+                                <MobileItemsWithRouter handleToggle={this.handleToggle} />
+                            </Menu>
                             <ThemeContext.Provider value={this.props.mobile}>
                                 {children}
                             </ThemeContext.Provider>
@@ -392,11 +388,11 @@ ResponsiveContainer.propTypes = {
     children: PropTypes.node
 }
 
-const HomepageLayout = () => (
+const DAAP = () => (
     <ResponsiveContainer>
         <ToastContainer />
         <Switch>
-            <Route exact path="/" component={wrappers.Verifier}/>
+            <Route exact path="/" component={HomeWithRouter}/>
             <Route path="/verifier" component={wrappers.Verifier}/>
             <Route path="/accounts" component={wrappers.Accounts}/>
             <AccountAuth path="/issuer" component={wrappers.Issuer}/>
@@ -441,4 +437,4 @@ const fixedOverlayMenuStyle = {
     zIndex: 1000000000
 }
 
-export default HomepageLayout
+export default DAAP

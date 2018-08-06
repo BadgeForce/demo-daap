@@ -1,4 +1,8 @@
 export const styles = {
+    contentsubheader: {
+        color: '#5e78cd',
+        marginTop: 0
+    },
     inputField: {
         borderTop: 0,
         borderLeft: 0,
@@ -33,6 +37,12 @@ export const styles = {
     buttonReallyDarkNoBorder: {
         backgroundColor: 'rgb(29, 72, 208)',
         color: '#fff',
+    },
+    buttonReallyDark: {
+        backgroundColor: 'rgb(29, 72, 208)',
+        color: '#fff',
+        borderRadius: '50px',
+        borderLeft: 0
     },
     menuButton: {
         backgroundColor: '#eef1fa',
@@ -81,5 +91,10 @@ export const styles = {
                 boxShadow: 'rgba(62, 99, 215, 0.2) 0px 3px 5px',
             },
         }
+    }, 
+    contentHeaderHome: {
+        color: '#2f51bf',
+        fontWeight: 700,
+        margin: 0
     }
 }
