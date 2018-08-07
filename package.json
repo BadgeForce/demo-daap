@@ -75,6 +75,7 @@
     "react-router-native": "^4.3.0",
     "react-scripts": "^1.1.4",
     "react-slick": "^0.23.1",
+    "react-svg": "^5.0.14",
     "react-text-truncate": "^0.13.1",
     "react-toastify": "^4.0.1",
     "resolve": "1.6.0",
@@ -147,19 +148,20 @@
   },
   "proxy": {
     "/ipfs": {
-      "target": "https://localhost:8080"
+      "target": "https://testnet.badgeforce.io/alpha"
     },
     "/state": {
-      "target": "http://localhost:8008"
+      "target": "https://testnet.badgeforce.io/alpha"
     },
     "/batches": {
-      "target": "http://localhost:8008"
+      "target": "https://testnet.badgeforce.io/alpha"
     },
     "/batch_statuses": {
-      "target": "http://localhost:8008"
+      "target": "https://testnet.badgeforce.io/alpha"
     }
   },
   "devDependencies": {
-    "@babel/preset-env": "^7.0.0-beta.54"
+    "@babel/preset-env": "^7.0.0-beta.54",
+    "svg-react-loader": "^0.4.5"
   }
 }

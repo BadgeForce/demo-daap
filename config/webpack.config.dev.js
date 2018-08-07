@@ -1,4 +1,4 @@
-'use strict';
+
 
 const autoprefixer = require('autoprefixer');
 const path = require('path');
@@ -101,6 +101,21 @@ module.exports = {
     ],
   },
   module: {
+    loaders: [
+      {
+        test: /\.svg$/,
+        exclude: /node_modules/,
+        loader: 'svg-react-loader',
+        query: {
+            classIdPrefix: '[name]-[hash:8]__',
+            propsMap: {
+                fillRule: 'fill-rule',
+                foo: 'bar'
+            },
+            xmlnsTest: /^xmlns.*$/
+        }
+      }
+    ],
     strictExportPresence: true,
     rules: [
       // TODO: Disable require.ensure as it's not a standard language feature.
@@ -133,7 +148,7 @@ module.exports = {
           // smaller than specified limit in bytes as data URLs to avoid requests.
           // A missing `test` is equivalent to a match.
           {
-            test: [/\.bmp$/, /\.gif$/, /\.jpe?g$/, /\.png$/],
+            test: [/\.bmp$/, /\.gif$/, /\.jpe?g$/, /\.png$/, /\.svg$/],
             loader: require.resolve('url-loader'),
             options: {
               limit: 10000,

@@ -154,7 +154,7 @@ class NavbarMenu extends Component {
     getSideBarBtn = () => {
         return (
             <Menu.Item key='desktopnavbtn'>
-                <Button circular style={styles.buttonDark} onClick={this.props.toggleSideBar} size='medium' icon={this.props.sideBarOpen ? 'close' : 'sidebar'} />
+                <Icon style={{color: styles.buttonDark.backgroundColor, backgroundColor: 'white', cursor: 'pointer'}} onClick={this.props.toggleSideBar} size='large' name={this.props.sideBarOpen ? 'close' : 'sidebar'} />
             </Menu.Item>
         );
     }
@@ -351,7 +351,7 @@ class MobileContainer extends Component {
                                 pointing secondary size='large'
                                 style={menuStyle}> 
                                 <Menu.Item>
-                                    <Icon onClick={this.handleToggle} style={{color: styles.buttonDarkNoBorder.backgroundColor}} size='large' name={this.state.sidebarOpened ? 'close' : 'sidebar'} />
+                                    <Icon onClick={this.handleToggle} style={{color: styles.navMenuHeader.color}} size='large' name={this.state.sidebarOpened ? 'close' : 'sidebar'} />
                                 </Menu.Item>
                                 <MobileItemsWithRouter handleToggle={this.handleToggle} />
                             </Menu>
@@ -403,7 +403,7 @@ const DAAP = () => (
 
 const menuStyle = {
     fontWeight: 'bold',
-    color: '#337ab7',
+    color: styles.navMenuHeader.color,
     border: 'none',
     borderRadius: 0,
     boxShadow: 'none',
@@ -425,7 +425,7 @@ const overlayStyle = {
 const fixedOverlayStyle = {
     ...overlayStyle,
     position: 'fixed',
-    top: '40px',
+    top: '8em',
     zIndex: 10,
 }
 
@@ -433,7 +433,7 @@ const fixedOverlayMenuStyle = {
     ...overlayStyle,
     position: 'relative',
     right: 0,
-    top: '40px',
+    top: '8em',
     zIndex: 1000000000
 }
 

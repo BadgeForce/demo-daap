@@ -63,7 +63,7 @@ export class TransactionStoreManager extends BadgeForceBase {
         try {
             this.cache[watcher.id] = watcher;
             await this.persistTransaction(watcher.id, watcher.transaction);
-            this.updateCallback(this.cache[watcher.id]);
+            if(this.updateCallback)this.updateCallback(this.cache[watcher.id]);
         } catch (error) {
             throw error;
         }

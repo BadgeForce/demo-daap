@@ -5,6 +5,7 @@ import { reaction } from 'mobx';
 import TextTruncate from 'react-text-truncate';
 import { sleep } from '../verifier';
 import { styles } from '../common-styles';
+import { InfomaticModal } from '../common/info';
 
 
 export class Transaction extends Component {
@@ -20,7 +21,33 @@ export class Transaction extends Component {
         this.getPopUp = this.getPopUp.bind(this);
         this.popupKey = `${this.props.id}-transaction-popup__`
     }
-
+    getInfo() {
+        let text, content; 
+        text = this.props.transaction.metaData.description
+        content = <span>
+                    <p style={{wordWrap: 'break-word'}}>{this.props.transaction.metaData.description}</p>
+                    <p style={{wordWrap: 'break-word'}}>Date: {this.props.transaction.metaData.date}</p>
+                    <div style={{display: 'flex', flexDirection: 'row', alignItems: 'flex-start'}}>
+                        <Icon name='hourglass half' />
+                        {`Transaction Status: ${this.props.transaction.status}`}  
+                        {this.props.transaction.status === 'PENDING' ? <Loader style={{paddingLeft: 10}} active size='mini' inline/> : null}
+                    </div>
+                </span>
+        return (
+            <TextTruncate
+                style={{overflow: 'hidden', color: 'rgb(47, 81, 191)'}}
+                line={1}
+                truncateText=''
+                text={text}
+                textTruncateChild={<InfomaticModal 
+                    iconName={this.statusColors[this.props.transaction.status].icon}
+                    header='Issue Transaction'
+                    content={content}
+                    trigger={<p style={{color: '#569fff', cursor: 'pointer'}}>...more</p>}
+                />}
+            />
+        );
+    }
     truncate(data) {
         return (
             <TextTruncate
@@ -53,7 +80,7 @@ export class Transaction extends Component {
                     <Feed.Summary>
                         <Feed.Event as={'h6'}>
                             <Header>
-                                <Header.Content as='div' content={this.truncate(this.props.transaction.metaData.description)} />
+                                <Header.Content as='div' content={this.getInfo()} />
                             </Header>
                         </Feed.Event>
                         <Feed.Date>{this.props.transaction.metaData.date}</Feed.Date>
@@ -86,7 +113,7 @@ export class Transactions extends Component {
     }
 
     bindTransactionUpdates(transaction) {
-        // console.log(transaction)
+        console.log(transaction)
         const transactions = this.state.transactions.filter(t => t.id !== transaction.id);
         this.setState({transactions: [...transactions, transaction]});
         if(this.props.updateCount) {

@@ -36,8 +36,12 @@ class NoAccounts extends Component {
     }
 
     redirect = () => {
-        this.setState({redirectDone: true});
-        this.props.history.push("/accounts", { from: this.props.location, redirect: true })
+        if(!this.props.accountStore.loadingCache && this.props.accountStore.current === null){
+            this.setState({redirectDone: true});
+            this.props.history.push("/accounts", { from: this.props.location, redirect: true })
+        }
+
+        return;
     }
 
     render() {
@@ -71,23 +75,42 @@ class NoAccounts extends Component {
 @observer
 export class AccountAuth extends Component {
 
-    
+    state = {done: false, redirect: false}
     noAccountDetected(props) {
         return this.props.accountStore.current === null;
     }
 
     renderLoading() {
         return (
-            <Dimmer active inverted>
-                <Loader inverted>Loading</Loader>
-            </Dimmer>
+            <Segment style={{padding: this.props.mobile ? '1em 0em' : '4em 0em'}} vertical>
+                <Grid container stackable>
+                    <Grid.Row style={{alignItems: 'center',display: 'flex', justifyContent: 'center'}}>
+                        <Grid.Column width={8}>
+                            <Dimmer active inverted>
+                                <Loader inverted  content={<Header icon='shield' content='BadgeForce' style={styles.navMenuHeader} />} />
+                            </Dimmer>
+                        </Grid.Column>
+                    </Grid.Row>
+                </Grid>
+            </Segment>
         );
+    }
+
+    async componentDidMount() {
+        if(!this.props.accountStore.loadingCache && this.props.accountStore.current === null) {
+            await this.props.accountStore.getCache();
+            this.setState({done: true, redirect: this.props.accountStore.current === null})
+        } else {
+            this.setState({done: true, redirect: false})
+        } 
     }
 
     render() {
         const { component: Component, ...rest } = this.props;
-        return (
-            !this.props.accountStore.loadingCache ? <Route  {...rest} render={ props => this.noAccountDetected() ? <NoAccounts {...props} /> : <Component {...props} /> }  />: this.renderLoading()
-        );
+        if(this.state.done) {
+            return <Route  {...rest} render={ props => this.state.redirect ? <NoAccounts {...props} /> : <Component {...props} /> }  />
+        } else {
+            return this.renderLoading();
+        }
     }
 }

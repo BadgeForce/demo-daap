@@ -38,7 +38,7 @@ export class Badges extends Component {
 
     render() {
         return (
-            <Segment style={{padding: this.props.mobile ? '1em 0em' : '4em 0em'}} vertical>
+            <Segment style={{padding: this.props.mobile ? '1em 0em' : '4em 0em 0em 8em'}} vertical>
                 <Grid container stackable>
                     <Grid.Row verticalAlign='top'>
                         {!this.props.mobile ? <Grid.Column style={{paddingBottom: this.props.mobile ? '0 !important': 'initial'}} width={4}>

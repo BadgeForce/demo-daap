@@ -76,7 +76,7 @@ export class CompactInfoList extends Component {
     dimmerContent = () => {
 
         if(this.props.loading) {
-            return  <Loader active={this.props.loading} content='Checking blockchain for badges' />
+            return  <Loader style={{marginTop: '1em'}} active={this.props.loading} content={<Header content='Checking blockchain for badges' style={styles.navMenuHeader} />} />
         }
 
         if(this.props.badges.length === 0) {
@@ -119,7 +119,7 @@ export class CompactInfoList extends Component {
                 </Grid.Row>
                 <Grid.Column>
                     {this.getSlider()}
-                    {this.props.badges.length === 0 || this.props.loading ? <Header as='h4' style={{...styles.badge.fullCard.contentHeader, marginTop: '1.5em'}} content='Swipe left or right to see other badges' /> : null}
+                    {this.props.badges.length === 0 || this.props.loading ? <Header as='h4' style={{...styles.badge.fullCard.contentHeader, marginTop: '8.5em'}} content='Swipe left or right to see other badges' /> : null}
                 </Grid.Column>
             </Dimmer.Dimmable>
         );
@@ -137,7 +137,7 @@ export class CompactInfoList extends Component {
         const settings = {
             slidesToShow: 1,
             slidesToScroll: 1,
-            dots: true,
+            dots: this.props.mobile,
             customPaging: 'badge-slider',
             nextArrow : <NextArrow />,
             prevArrow: <PrevArrow />,

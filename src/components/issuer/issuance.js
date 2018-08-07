@@ -170,7 +170,7 @@ export class Issuances extends Component {
     render() {
         return (
             <Grid.Column>
-                <Loader active={this.state.loading.toggle} indeterminate>{this.state.loading.message}</Loader>
+                <Loader active={this.state.loading.toggle} indeterminate content={this.state.loading.message} style={styles.navMenuHeader} />} />
                 <Grid.Row style={{display: 'flex', flexDirection: 'row', justifyContent: 'flex-end'}}>
                     <Button circular color='grey' onClick={this.refresh} size='large' icon='refresh'/>
                 </Grid.Row>

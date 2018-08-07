@@ -55,7 +55,8 @@ export const styles = {
     navMenuHeader: {
         color: '#2f51bf',
         display: 'flex',
-        justifyContent: 'center'
+        justifyContent: 'center',
+        flexDirection: 'column',
     },
     segmentBG: {
         backgroundColor: '#eef1fa',

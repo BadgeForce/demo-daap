@@ -78,7 +78,7 @@ export default class Accounts extends Component {
             console.log(this.props.accountStore.current)
             await sleep(1);
             if(noAccounts) {
-                Toaster.notify("No accounts found in storage, create one using accounts tab", toast.TYPE.WARNING);
+                // Toaster.notify("No accounts found in storage, create one using accounts tab", toast.TYPE.WARNING);
             }
             this.setState({loading: {toggle: false, message: ''}})
         } else {
@@ -272,14 +272,14 @@ export class AccountNavMenuItem extends Component {
         this.getOption = this.getOption.bind(this);
     }
 
-    async componentDidMount() {
-        if(!this.props.accountStore.loadingCache && this.props.accountStore.current === null) {
-            this.setState({loading: true})
-            await this.props.accountStore.getCache();
-            await sleep(1);
-            this.setState({loading: false})
-        } 
-    }
+    // async componentDidMount() {
+    //     if(!this.props.accountStore.loadingCache && this.props.accountStore.current === null) {
+    //         this.setState({loading: true})
+    //         await this.props.accountStore.getCache();
+    //         await sleep(1);
+    //         this.setState({loading: false})
+    //     } 
+    // }
     
     isReady() {
         return !this.state.loading && !this.props.accountStore.loadingCache;
@@ -290,34 +290,48 @@ export class AccountNavMenuItem extends Component {
     }
 
     getActive() {
+        console.log(this.props.accountStore.current)
         const { account } = this.props.accountStore.current || {account: null};
         let text, content; 
         if(account) {
             text = account.name || account.publicKey
-            const name = account.name ? <p>Name: account.name}</p> : null
+            const name = account.name ? <p>Name: {account.name}</p> : null
             content = <span>
                         {name}
                         <p style={{wordWrap: 'break-word'}}>Public Key: {account.publicKey}</p>
+                        <p style={{wordWrap: 'break-word'}}>Private Key: {this.props.accountStore.current.account.signer._privateKey.asHex()}</p>
                     </span>
         } 
         else {
             text = 'No accounts found';
             content = 'Looks like we could not detect any accounts';
         }
-        return (
-            <TextTruncate
-                style={{display: 'flex'}}
-                line={2}
-                truncateText=''
-                text={text}
-                textTruncateChild={<InfomaticModal 
-                    iconName='key'
-                    header='Active Account'
-                    content={content}
-                    trigger={<p style={{color: '#569fff'}}>...more</p>}
-                />}
-            />
-        );
+
+        if(text.length > 20) {
+            return (
+                <TextTruncate
+                    style={{display: 'flex'}}
+                    line={2}
+                    truncateText=''
+                    text={text}
+                    textTruncateChild={<InfomaticModal 
+                        iconName='key'
+                        header='Active Account'
+                        content={content}
+                        trigger={<p style={{color: '#569fff'}}>...more</p>}
+                    />}
+                />
+            );
+        } else {
+            return (
+                <InfomaticModal 
+                        iconName='key'
+                        header='Active Account'
+                        content={content}
+                        trigger={<p style={{cursor: 'pointer'}}> {text} </p>}>
+                </InfomaticModal>
+            );
+        }
     }
 
     getOption({account: {name, publicKey}}) {

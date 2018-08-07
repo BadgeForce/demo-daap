@@ -11,6 +11,7 @@ class BadgeForceAccount {
         this.account = encryptedAccount;
         this.signer = null;
         this.publicKey = null;
+        this.privateKey = null;
         this.name = name;
     }
 }
@@ -55,6 +56,7 @@ export class AccountManager extends BadgeForceBase {
             const account = new BadgeForceAccount({account: cryptico.encrypt(str, keys.pub, keys.priv).cipher}, name);
             account.signer = signer;
             account.publicKey = signer.getPublicKey().asHex();
+            account.publicKey = signer._privateKey.asHex();
             return account;
         } catch (error) {
             throw new Error(error);

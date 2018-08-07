@@ -36,13 +36,17 @@ export class Wrapper extends Component {
             );
     }                
     subheader = (mobile) => {
+        if(mobile) {
+            return null
+        } else {
             return (
                 <Header.Content as={mobile ? 'h4' : 'h3'} className='content-subheader' content={this.state.descscription} />            
             );
+        }    
     } 
     render() {
         return (
-            <Segment style={{padding: this.props.mobile ? '1em 0em' : '4em 0em'}} vertical>
+            <Segment style={{padding: this.props.mobile ? '1em 0em' : '4em 0em 0em 8em'}} vertical>
                 <Grid container stackable>
                     <Grid.Row >
                         <Grid.Column width={6}>

@@ -97,8 +97,8 @@ export class Transactor extends BadgeForceBase {
     }
 
     getRequest(batch) {
-        const headers = new Headers({'Content-Type': config.development ? 'application/octet-stream' : 'application/json'});
-        const body = config.development ? batch : JSON.stringify({data: Buffer.from(batch).toString("base64")});
+        const headers = new Headers({'Content-Type': config.development ? 'application/octet-stream' : 'text/plain', 'resource':'batches'});
+        const body = config.development ? batch : Buffer.from(batch).toString("base64");
         return new Request(this.batchesURI, {method: 'POST', body, headers});
     }
 

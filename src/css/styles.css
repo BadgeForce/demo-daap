@@ -59,3 +59,18 @@ body::-webkit-scrollbar-track {
     padding: 0;
     margin: 0;
 }
+.page_loader{
+	position: fixed;
+	left: 0;
+	right: 0;
+	top: 0;
+	bottom: 0;
+	background-color: white;
+	display: flex;
+	display: -webkit-flex;
+	-webkit-justify-content: center;
+	justify-content: center;
+	-webkit-align-items: center;
+	align-items: center;
+	z-index: 99999;
+}

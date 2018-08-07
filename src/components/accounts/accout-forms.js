@@ -43,12 +43,12 @@ export class NewAccountForm extends Component {
     }
     render(){
         return (
-            <Form loading={this.state.loading} size='large' style={{paddingTop: 25}} error={this.state.formError ? true : undefined}>
+            <Form loading={this.state.loading} size='large' style={{paddingTop: 25}} value={this.state.name} error={this.state.formError ? true : undefined}>
                 <Form.Field error={this.state.formError ? true : undefined} value={this.state.name} >
                     <input style={styles.inputField} placeholder='Name for account' onChange={(e) => this.setState({name: e.target.value})}/>
                 </Form.Field>
                 <Form.Field error={this.state.formError ? true : undefined} value={this.state.password}>
-                    <input style={styles.inputField} type='password' placeholder='Very strong password'  onChange={(e, password) => this.setState({password: e.target.value})} />
+                    <input style={styles.inputField} type='password' value={this.state.password} placeholder='Very strong password'  onChange={(e, password) => this.setState({password: e.target.value})} />
                 </Form.Field>
                 <Form.Group>
                     <Form.Button style={styles.buttonDark} disabled={this.state.password === '' || this.state.name === ''} 

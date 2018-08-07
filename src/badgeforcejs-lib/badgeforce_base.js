@@ -32,10 +32,10 @@ export class RestClient {
     async queryIPFS(hash) {
         try {
             const uri = `${this.ipfsURI}/${hash}`;
-            const opts = {times: 2};
+            const opts = {times: 3};
             const method = async (callback) => {
                 try {
-                    const response = await window.fetch(new Request(uri, {method: 'GET', headers: {'Content-Type': 'application/json'}}));
+                    const response = await window.fetch(new Request(uri, {method: 'GET', headers: {'Access-Control-Allow-Origin':'*', 'Content-Type': 'application/json', 'resource':'ipfs', 'IPFS-HASH': hash}}));
                     response.status > 300 ? callback(new Error(response.statusText)): callback(null, response) ;
                 } catch (error) {
                     callback(error)
@@ -52,10 +52,10 @@ export class RestClient {
     async queryState(address, retries) {
         try {
             const uri = `${this.stateURI}?address=${address}`;
-            const opts = {times: 2};
+            const opts = {times: 0};
             const method = async (callback) => {
                 try {
-                    const response = await window.fetch(new Request(uri, {method: 'GET', headers: {'Content-Type': 'application/json'}}));
+                    const response = await window.fetch(new Request(uri, {method: 'GET', headers: {'Access-Control-Allow-Origin':'*', 'Content-Type': 'application/json', 'resource': 'state'}}));
                     response.status > 300 ? callback(new Error(response.statusText)): callback(null, response) ;
                 } catch (error) {
                     callback(error)
@@ -73,7 +73,7 @@ export class RestClient {
             const opts = {times: 10};
             const method = async (callback) => {
                 try {
-                    const response = await window.fetch(new Request(link, {method: 'GET', headers: {'Content-Type': 'application/json'}}));
+                    const response = await window.fetch(new Request(link, {method: 'GET', headers: {'Content-Type': 'application/json', 'resource': 'batch_statuses'}}));
                     response.status > 300 ? callback(new Error(response.statusText)): callback(null, response) ;
                 } catch (error) {
                     callback(error)

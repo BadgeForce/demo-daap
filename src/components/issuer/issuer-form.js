@@ -299,23 +299,34 @@ export class IssueForm extends Component {
         );
     }
 
+    getSuccessInfo() {
+        let text, content; 
+        text = this.state.issueSuccess.transaction.metaData.description
+        content = <span>
+                    <p style={{wordWrap: 'break-word'}}>{this.state.issueSuccess.transaction.metaData.description}</p>
+                </span>
+        return (
+            <TextTruncate
+                style={{display: 'flex'}}
+                line={2}
+                truncateText=''
+                text={text}
+                textTruncateChild={<InfomaticModal 
+                    iconName='shield'
+                    header='Issued a badge successfully'
+                    content={content}
+                    trigger={<p style={{color: '#569fff'}}>...more</p>}
+                />}
+            />
+        );
+    }
     getSuccessMessage() {
         return (
             <span>
                 <Message style={{display: 'flex'}} 
                     success 
                     header={'Success'} 
-                    content={
-                            <TextTruncate
-                                style={{overflow: 'hidden'}}
-                                line={1}
-                                truncateText="…"
-                                text={this.state.issueSuccess.transaction.metaData.description}
-                                textTruncateChild={<a href='' onClick={(e) => {
-                                    e.preventDefault();
-                                    document.getElementById('success_info_popup').click()
-                                }} >read more</a>} />
-                        }
+                    content={this.getSuccessInfo()}
                 />
                 <Popup content={this.state.issueSuccess.transaction.metaData.description} trigger={<a id={'success_info_popup'} />} hideOnScroll on='click' position='bottom left' />
             </span>
@@ -353,7 +364,7 @@ export class IssueForm extends Component {
                         <DatePicker selected={this.state.expiration} placeholderText="Expiration" onChange={(expiration) => this.setState({expiration})} />
                     </Form.Field>
                 </Form.Group>
-                <Form.Group>
+                <Form.Group style={{display: 'flex', justifyContent: 'center'}}>
                     <Form.Button style={styles.buttonDark} disabled={this.props.warn || this.state.loading} onClick={this.handleIssue} size='large' content='Issue Credential' icon='send' labelPosition='right'/>
                     <Form.Button style={styles.buttonLight} disabled={this.props.warn || this.state.loading} size='large' content='Upload Image' icon='upload' labelPosition='right' onClick={() => document.getElementById('credentialImageUpload').click()} />
                 </Form.Group>
@@ -385,7 +396,7 @@ export class IssueForm extends Component {
     render() {
         return (
             <Segment style={{
-                padding: this.props.mobile ? '1em 0em' : '4em 0em'
+                padding: this.props.mobile ? '1em 0em' : '4em 0em 0em 8em'
             }} vertical>
                 <Grid container stackable>
                     <Grid.Row >
