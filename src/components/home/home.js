@@ -287,10 +287,10 @@ class DefaultContainer extends Component {
                             <TransactionNavList />
                         </ThemeContext.Provider>
                     </Sidebar>
-                    <Sidebar.Pusher>
+                    <Sidebar.Pusher style={{height: '100vh'}}>
                         <div>
                             <Segment style={{borderBottom: 0}} vertical />
-                            <ThemeContext.Provider value={this.props.mobile || this.props.tablet}>                                    
+                            <ThemeContext.Provider  value={this.props.mobile || this.props.tablet}>                                    
                                 {children}
                             </ThemeContext.Provider>
                         </div>

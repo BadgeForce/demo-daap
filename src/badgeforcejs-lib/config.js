@@ -20,7 +20,7 @@ export class Config {
     };
 }
 
-export const ChainRestConfig = process.env.NODE_ENV === 'development' ? Config.testnet : Config.testnet;
+export const ChainRestConfig = process.env.NODE_ENV === 'development' ? Config.development : Config.testnet;
 
 if(process.env.NODE_ENV === 'development') {
     console.log("DEVELOPMENT ENV", Config.development);

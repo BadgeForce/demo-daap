@@ -301,7 +301,7 @@ export class IssueForm extends Component {
 
     getSuccessInfo() {
         let text, content; 
-        text = this.state.issueSuccess.transaction.metaData.description
+        text = this.state.issueSuccess.transaction.metaData.description.substr(0, 25)
         content = <span>
                     <p style={{wordWrap: 'break-word'}}>{this.state.issueSuccess.transaction.metaData.description}</p>
                 </span>
@@ -333,6 +333,9 @@ export class IssueForm extends Component {
         );
     }
 
+    setDateEarned = (dateEarned) => this.setState({dateEarned})
+    setExpired = (expiration) => this.setState({expiration})
+
     renderIssueForm() {
         return (
             <Form loading={this.state.loading} style={{paddingTop: 25}} size='large' error={this.state.formError ? true : undefined}>
@@ -358,10 +361,10 @@ export class IssueForm extends Component {
                 </Grid.Row>
                 <Form.Group widths='equal'>
                     <Form.Field error={this.state.formError ? true : undefined} style={{display: 'flex', alignItems: 'flex-end', justifyContent: 'center'}}>
-                        <DatePicker selected={this.state.dateEarned} placeholderText="Date Earned" onChange={(dateEarned) => this.setState({dateEarned})} />
+                        <DatePicker selected={this.state.dateEarned} placeholderText="Date Earned" onChange={this.setDateEarned} />
                     </Form.Field>
                     <Form.Field error={this.state.formError ? true : undefined} style={{display: 'flex', alignItems: 'flex-end', justifyContent: 'center'}}>
-                        <DatePicker selected={this.state.expiration} placeholderText="Expiration" onChange={(expiration) => this.setState({expiration})} />
+                        <DatePicker selected={this.state.expiration} placeholderText="Expiration" onChange={this.setExpired} />
                     </Form.Field>
                 </Form.Group>
                 <Form.Group style={{display: 'flex', justifyContent: 'center'}}>

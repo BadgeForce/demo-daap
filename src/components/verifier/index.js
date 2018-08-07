@@ -147,6 +147,22 @@ const VerificationResultsModal = (success, header, results, trigger, icon) => (
   )
 
 export class CredentialCardActions extends Component {
+    showQrCode = (mobile, data) => {
+        return (
+            <Modal trigger={<Button 
+                    disabled={this.props.loading} 
+                    style={styles.buttonLightNoBorder}
+                    content={'show qrcode'} />} closeIcon>
+                <Modal.Header style={{display: 'flex'}}>
+                    <Icon name='qrcode' style={{color: styles.buttonLight.color}} />
+                    <Header.Content style={styles.contentHeaderHome} content='Scan QR Code with verifer' />
+                </Modal.Header>
+                <Modal.Content>
+                    <QRCode value={JSON.stringify({data: ProtoDecoder.encodedQRDegree(data)})} />
+                </Modal.Content>
+            </Modal>
+        );
+    }
     download = (mobile) => {
         return <Button 
                 disabled={this.props.loading}
@@ -178,7 +194,7 @@ export class CredentialCardActions extends Component {
         console.log(mobile)
         return (
             <Button.Group size='medium' attached='top' icon={mobile}>
-                {this.props.qrcode.enabled ? this.qrCode(mobile) : null}
+                {this.props.qrcode.enabled ? this.showQrCode(mobile, this.props.qrcode.data) : null}
                 {this.props.download.enabled ? this.download(mobile) : null}
                 {this.props.verify.enabled ? this.verify(mobile) : null}
             </Button.Group>
@@ -285,10 +301,6 @@ export class CredentialComponent extends Component {
         }
     }
 
-    showQrCode = () => {
-        this.setState({showQrCode: !this.state.showQrCode})
-    }
-
     downloadQRC = () => {
         const dataStr = "data:text/json;charset=utf-8," + JSON.stringify({data: ProtoDecoder.encodedQRDegree(this.props.data)});
         const link = document.createElement("a");
@@ -309,11 +321,6 @@ export class CredentialComponent extends Component {
     }
     
     truncate(text, child) {
-        const badgeDescriptionEl = document.getElementById('root');
-        console.log('YOOOOOO', badgeDescriptionEl.clientWidth);
-        console.log('WHOLE', text, text.length)
-        console.log('SUB', text.substr(0, getTextWidth(text, badgeDescriptionEl.style.font) - 50 ))
-        console.log('CANVAS STUFF', getTextWidth(text, badgeDescriptionEl.style.font))
         return (
             <Grid.Row>
                 <TextTruncate
@@ -410,15 +417,7 @@ export class CredentialComponent extends Component {
         const imageSrc = this.props.data.image || noimage;
         return (
             <Grid.Column style={{ width: '100%' }}>
-                <Modal open={this.state.showQrCode} onClose={this.showQrCode} closeIcon>
-                    <Modal.Header style={{display: 'flex'}}>
-                        <Icon name='qrcode' style={{color: styles.buttonLight.color}} />
-                        <Header.Content style={styles.contentHeaderHome} content='Scan QR Code with verifer' />
-                    </Modal.Header>
-                    <Modal.Content>
-                        <QRCode value={JSON.stringify({data: ProtoDecoder.encodedQRDegree(this.props.data)})} />
-                    </Modal.Content>
-                </Modal>
+                
                 <Segment style={{padding: 0, border: 0, boxShadow: 0}}>
                     <Item style={{display: 'flex', flexDirection: 'column'}}>
                         <Item.Header as='h3' style={{
@@ -622,7 +621,7 @@ export class CredentialComponent extends Component {
                         mobile={this.props.mobile}
                         loading={this.state.inProgress}
                         verify={{enabled: this.props.verifyAction && this.state.verified, callback: this.verify}}
-                        qrcode={{enabled: this.props.qrcodeAction, callback: console.log}}
+                        qrcode={{enabled: this.props.qrcodeAction, data: this.props.data}}
                         download={{enabled: !this.props.mobile && this.props.downloadAction  && this.state.verified, callback: this.downloadQRC}}
                     />
                 </Card.Content>
@@ -860,7 +859,7 @@ export class Verifier extends Component {
     }
     async handleVerify() {
         if(this.isValidForm()){
-            this.setState({results: null, visible: false, loading: true});
+            this.setState({results: null, visible: false, loading: true, qrcode: false});
             try {
                 const results = await this.badgeforceVerifier.verifyAcademic(this.state.recipient, this.state.name, 'bf-edu-123');
                 Toaster.update(this.state.toastId, 'Done Verifying', toast.TYPE.INFO);
@@ -896,7 +895,12 @@ export class Verifier extends Component {
     }
     handleScan(data) {
         try {
-            console.log(data.toString())
+            console.log(data);
+            console.log(JSON.parse(data))
+            const badge = JSON.parse(data)
+            const { recipient, name, institutionId } = badge;
+            this.setState({recipient, name, institutionId});
+            this.handleVerify()
         } catch (error) {
             console.log(error);
         }
@@ -953,8 +957,10 @@ export class Verifier extends Component {
             <Form size='large' error={this.state.formError ? true : undefined}>
                 <ToastContainer autoClose={5000} />
                 <QrReader
+                            renderAs='canvas'
+                            size={200}
                             delay={100}
-                            onError={err => Toaster.notify('Something went wrong reading QR Code', toast.TYPE.ERROR)}
+                            onError={err => Toaster.notify('Something went wrong reading QR Code '+err, toast.TYPE.ERROR)}
                             onScan={this.handleScan}
                             style={{ width: '100%' }}
                         />

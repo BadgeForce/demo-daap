@@ -45,7 +45,7 @@ class CustomSlide extends Component {
                     degree={badge}
                     signature={badge.signature} 
                     ipfs={ipfs}
-                    qrcodeAction={false}
+                    qrcodeAction
                     verifyAction
                     downloadAction
                     />

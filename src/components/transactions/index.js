@@ -70,6 +70,7 @@ export class Transaction extends Component {
     }
 
     render() {
+        console.log(this.props.transaction)
         return (
             <Feed.Event>
                 <Feed.Label>
@@ -237,7 +238,7 @@ export class TransactionNavList extends Transactions {
                             {this.state.loading ? <Icon loading name='spinner' /> : null }
                             <Header.Content>
                                 Transaction Log
-                                {!this.state.loading ? <Label style={styles.navMenuItem} circular>{this.state.count}</Label> : null }
+                                {!this.state.loading && !this.props.accountStore.loadingCache ? <Label style={styles.navMenuItem} circular>{this.state.count}</Label> : null }
                             </Header.Content>
                         </Header>
                     </Segment>
@@ -260,7 +261,7 @@ export class TransactionNavList extends Transactions {
     }
     render() {
         return (
-            !this.props.mobile ? this.renderList() : null
+            !this.props.mobile ? null : null
         );
     }
 }

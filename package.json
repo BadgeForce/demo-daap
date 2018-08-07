@@ -148,16 +148,16 @@
   },
   "proxy": {
     "/ipfs": {
-      "target": "https://testnet.badgeforce.io/alpha"
+      "target": "http://localhost:8080"
     },
     "/state": {
-      "target": "https://testnet.badgeforce.io/alpha"
+      "target": "http://localhost:8008"
     },
     "/batches": {
-      "target": "https://testnet.badgeforce.io/alpha"
+      "target": "http://localhost:8008"
     },
     "/batch_statuses": {
-      "target": "https://testnet.badgeforce.io/alpha"
+      "target": "http://localhost:8008"
     }
   },
   "devDependencies": {

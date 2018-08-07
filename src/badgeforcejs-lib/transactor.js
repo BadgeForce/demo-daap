@@ -12,10 +12,6 @@ const {AcademicCredential, Core, Payload, PayloadAction, AnyData, Revoke } = req
 const google  = require('../protobufs-js/browser/credentials/compiled').google;
 const config = require('./config').ChainRestConfig;
 
-const FAMILY_NAME = 'badgeforce_issuer';
-const FAMILY_VERSION = '1.0';
-const REST_API = process.env.NODE_ENV === 'development' ? "http://localhost:3010/batches" : 'http://127.0.0.1:8008/batches';
-
 export class Transactor extends BadgeForceBase {
     endpoint = '/batches';
     familyName = 'badgeforce_issuer';
