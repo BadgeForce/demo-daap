@@ -37,22 +37,29 @@ class GetStarted extends Component {
 
     options = () => {
         return (
-            <Header.Content style={{display: 'flex'}}>
-                <Button size='huge' 
-                    icon='check'
-                    labelPosition='right' 
-                    style={styles.buttonReallyDark} 
-                    onClick={() => this.redirect('/verifier')} content='Verify a credential'  />
-                <Button size='huge' 
-                    icon='shield'
-                    labelPosition='right' 
-                    style={styles.buttonReallyDark} 
-                    onClick={() => this.redirect('/issuer')} content='Issue a credential' />
-                <Button size='huge' 
-                    icon='user'
-                    labelPosition='right' 
-                    style={styles.buttonReallyDark} onClick={() => this.redirect('/accounts')} 
-                    content='Manage your accounts' />
+            <Header.Content style={{display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                <Button.Group vertical={this.props.mobile}>
+                    <Button size='huge' 
+                        icon='check'
+                        labelPosition='right' 
+                        style={styles.buttonReallyDarkNoBorder} 
+                        onClick={() => this.redirect('/verifier')} content='Verify a credential'  />
+                    <Button size='huge' 
+                        icon='shield'
+                        labelPosition='right' 
+                        style={styles.buttonReallyDarkNoBorder} 
+                        onClick={() => this.redirect('/issuer')} content='Issue a credential' />
+                    <Button size='huge' 
+                        icon='user'
+                        labelPosition='right' 
+                        style={styles.buttonReallyDarkNoBorder} onClick={() => this.redirect('/accounts')} 
+                        content='Manage your accounts' />
+                    <Button size='huge' 
+                        icon='shield'
+                        labelPosition='right' 
+                        style={styles.buttonReallyDarkNoBorder} onClick={() => this.redirect('/badges')} 
+                        content='View your badges' />
+                    </Button.Group>
             </Header.Content>
         );
     }

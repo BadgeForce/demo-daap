@@ -75,6 +75,7 @@ export class AccountManager extends BadgeForceBase {
             const decrypted = JSON.parse(plaintext);
             account.signer = new CryptoFactory(context).newSigner(new Secp256k1PrivateKey(Buffer.from(decrypted.privateKey, 'hex')));
             account.publicKey = account.signer.getPublicKey().asHex();
+            account.privateKey = account.signer._privateKey.asHex()
             account.name = decrypted.name || null;
             return account;
         } catch (error) {
@@ -88,6 +89,7 @@ export class AccountManager extends BadgeForceBase {
         const account = new BadgeForceAccount();
         account.signer = new CryptoFactory(context).newSigner(new Secp256k1PrivateKey(Buffer.from(privateKey, 'hex')));
         account.publicKey = account.signer.getPublicKey().asHex();
+        account.privateKey = account.signer._privateKey.asHex()
         account.name = name;
         return account;
     }

@@ -74,20 +74,20 @@ export class Issuances extends Component {
         return {
             prop: () => this.props.accountStore.current, 
             action: async current => {
-                // await this.loadIssuances();
+                await this.loadIssuances();
             }
         };
     }
 
     async loadIssuances() {
         this.setState({issuances: [],active: null, key: null, loading: {toggle: true, message: 'Loading Issuances'}});
-        // try {
-        //     const issuances = await this.props.accountStore.current.loadIssuances();
-        //     this.setState({issuances, loading: {toggle: false, message: ''}});
-        // } catch (error) {
-        //     console.log(error);
-        //     this.setState({loading: {toggle: false, message: ''}});
-        // }
+        try {
+            const issuances = await this.props.accountStore.current.loadIssuances();
+            this.setState({issuances, loading: {toggle: false, message: ''}});
+        } catch (error) {
+            console.log(error);
+            this.setState({loading: {toggle: false, message: ''}});
+        }
         this.setState({loading: {toggle: false, message: ''}});
     }
 
@@ -170,12 +170,12 @@ export class Issuances extends Component {
     render() {
         return (
             <Grid.Column>
-                <Loader active={this.state.loading.toggle} indeterminate content={this.state.loading.message} style={styles.navMenuHeader} />} />
+                <Loader active={this.state.loading.toggle} inverted  content={<Header content={this.state.loading.message} style={styles.navMenuHeader} />} />
                 <Grid.Row style={{display: 'flex', flexDirection: 'row', justifyContent: 'flex-end'}}>
                     <Button circular color='grey' onClick={this.refresh} size='large' icon='refresh'/>
                 </Grid.Row>
                 {this.state.issuances.length === 0 && !this.state.loading ? <Message header='Issuances could not be found or loaded' content='Refresh to try again' warning /> : null}
-                {/* {this.state.issuances.length === 0 ? <Header style={styles.navMenuHeader} content={!this.state.loading.toggle && this.state.issuances.length === 0 ? this.renderHeader() : null} as='h4' /> : null}  */}
+                {this.state.issuances.length === 0 ? <Header style={styles.navMenuHeader} content={!this.state.loading.toggle && this.state.issuances.length === 0 ? this.renderHeader() : null} as='h4' /> : null} 
                 {!this.state.loading.toggle && this.state.issuances.length > 0 ? this.renderIssuances() : null}
             </Grid.Column>
         )

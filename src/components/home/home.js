@@ -16,6 +16,9 @@ import {
     Header,
     Form
 } from 'semantic-ui-react'
+import { reaction } from 'mobx';
+import {observer, inject} from 'mobx-react';
+import TextTruncate from 'react-text-truncate';
 import  wrappers from './wrappers';
 import { HomeComponent } from './landing-page';
 import { AccountAuth } from '../accounts/auth';
@@ -25,6 +28,7 @@ import { ChainRestConfig } from '../../badgeforcejs-lib/config';
 import { styles } from '../common-styles';
 import { Switch, Route, Link, withRouter } from 'react-router-dom'
 import { ToastContainer } from "react-toastify";
+import { InfomaticModal } from '../common/info';
 import headerimage from '../../images/ourproblem.png';
 import logo from '../../images/LogoBadgeforce.png';
 import 'react-toastify/dist/ReactToastify.css';
@@ -304,7 +308,8 @@ class DefaultContainer extends Component {
 DefaultContainer.propTypes = {
     children: PropTypes.node
 }
-
+@inject('accountStore')
+@observer
 class MobileContainer extends Component {
     state = {menuFixed: false}
 
@@ -319,7 +324,52 @@ class MobileContainer extends Component {
     })
     stickTopMenu = () => this.setState({ menuFixed: true });
     unStickTopMenu = () => this.setState({ menuFixed: false });
+    getActive() {
+        console.log(this.props.accountStore.current)
+        const { account } = this.props.accountStore.current || {account: null};
+        let text, content; 
+        if(account) {
+            text = account.name || account.publicKey
+            const name = account.name ? <p>Name: {account.name}</p> : null
+            console.log(account)
+            content = <span>
+                        {name}
+                        <p style={{wordWrap: 'break-word'}}>Public Key: {account.publicKey}</p>
+                        <p style={{wordWrap: 'break-word'}}>Private Key: {account.privateKey}</p>
+                    </span>
+        } 
+        else {
+            text = 'No accounts found';
+            content = 'Looks like we could not detect any accounts';
+        }
 
+        if(text.length > 20) {
+            return (
+                <TextTruncate
+                    style={{display: 'flex'}}
+                    line={2}
+                    truncateText=''
+                    text={text}
+                    textTruncateChild={<InfomaticModal 
+                        iconName='key'
+                        header='Active Account'
+                        content={content}
+                        trigger={<p style={{color: '#569fff'}}>...more</p>}
+                    />}
+                />
+            );
+        } else {
+            return (
+                <InfomaticModal 
+                        iconName='key'
+                        header='Active Account'
+                        content={content}
+                        trigger={<Button size='huge' style={{color: styles.buttonLight.color, backgroundColor: 'inherit', cursor: 'pointer'}} icon='user' content={text} />}>
+                </InfomaticModal>
+            );
+        }
+    }
+    
     render() {
         const {children} = this.props
         const {sidebarOpened, menuFixed} = this.state
@@ -338,7 +388,7 @@ class MobileContainer extends Component {
                         <NavbarMenuWithRouter handleToggle={this.handleToggle} {...this.props} testnetStatusPosition='right' sidebarOpen={sidebarOpened} />
                     </Sidebar>
 
-                    <Sidebar.Pusher onClick={this.handlePusherClick}>
+                    <Sidebar.Pusher style={{height: '100vh'}} onClick={this.handlePusherClick}>
                         <Segment
                             vertical
                             textAlign='center'
@@ -354,6 +404,7 @@ class MobileContainer extends Component {
                                     <Icon onClick={this.handleToggle} style={{color: styles.navMenuHeader.color}} size='large' name={this.state.sidebarOpened ? 'close' : 'sidebar'} />
                                 </Menu.Item>
                                 <MobileItemsWithRouter handleToggle={this.handleToggle} />
+                                {this.getActive()}
                             </Menu>
                             <ThemeContext.Provider value={this.props.mobile}>
                                 {children}
@@ -408,6 +459,8 @@ const menuStyle = {
     borderRadius: 0,
     boxShadow: 'none',
     transition: 'box-shadow .5s ease, padding .5s ease',
+    display: 'flex',
+    justifyContent: 'space-between'
 }
 
 const fixedMenuStyle = {

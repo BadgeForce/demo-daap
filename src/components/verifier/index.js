@@ -956,14 +956,14 @@ export class Verifier extends Component {
         return (
             <Form size='large' error={this.state.formError ? true : undefined}>
                 <ToastContainer autoClose={5000} />
-                <QrReader
+                {/* <QrReader
                             renderAs='canvas'
                             size={200}
                             delay={100}
                             onError={err => Toaster.notify('Something went wrong reading QR Code '+err, toast.TYPE.ERROR)}
                             onScan={this.handleScan}
                             style={{ width: '100%' }}
-                        />
+                        /> */}
                 {this.state.qrcode ? <div>
                         <QrReader
                             ref={this.qrScannerRef}
@@ -997,7 +997,7 @@ export class Verifier extends Component {
                     <Button size='small' ref={this.verifyButtonRef} disabled={this.state.loading} style={styles.buttonLight} onClick={this.handleVerify} content='Verify Using Form' icon='check' labelPosition='left'/>
                     <Button size='small' disabled={this.state.loading || this.props.mobile} style={styles.buttonDark} content='Verify Using BFAC File Upload' icon='upload' labelPosition='right' onClick={() => document.getElementById('jsonUpload').click()} />
                 </Button.Group>
-                <Form.Button disabled={this.state.loading} style={{display: 'flex', alignSelf: 'flex-start'}} color='orange' size='large' content='Verify From QR Code Scan' icon='qrcode' labelPosition='right' onClick={this.showQRScanner} />
+                {/* <Form.Button disabled={this.state.loading} style={{display: 'flex', alignSelf: 'flex-start'}} color='orange' size='large' content='Verify From QR Code Scan' icon='qrcode' labelPosition='right' onClick={this.showQRScanner} /> */}
                 {this.state.formErrors.length > 0 ? this.showFormErrors() : null}
                 <input type="file" id="jsonUpload" onChange={this.uploadJSON} style={{display: 'none'}} />  
             </Form>

@@ -48,7 +48,7 @@ class CustomSlide extends Component {
                     qrcodeAction
                     verifyAction
                     downloadAction
-                    />
+                />
                 {/* <QRCode id='qrcode' size={160} style={{height: 'auto', width: 'auto'}} value={qrCodeVal} /> */}
             </Grid.Column>
         );
@@ -102,7 +102,7 @@ export class CompactInfoList extends Component {
                     {this.dimmerContent()}
                 </Dimmer>
                 <Grid.Row>
-                    <Grid.Column style={{display: 'flex'}}>
+                    <Grid.Column style={{display: 'flex', marginBottom: this.props.mobile ? '1em' : 'initial'}}>
                         <Button circular style={styles.buttonLight} onClick={this.props.refresh} size='large' icon='refresh'/>
                         <Dropdown
                             style={{backgroundColor: styles.buttonLight.backgroundColor}}
@@ -137,13 +137,13 @@ export class CompactInfoList extends Component {
         const settings = {
             slidesToShow: 1,
             slidesToScroll: 1,
-            dots: this.props.mobile,
-            customPaging: 'badge-slider',
+            dots: true,
+            dotsClass: "slick-dots slick-thumb",
             nextArrow : <NextArrow />,
             prevArrow: <PrevArrow />,
             arrows: this.props.mobile ? false: true,
-            customPaging: (i) => {
-                return this.props.mobile ? this.swipeMsg() : this.badgeImgUnder(i);
+            appendDots: (i) => {
+                return this.swipeMsg();
             }
         };
         

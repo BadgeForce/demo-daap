@@ -261,7 +261,7 @@ export class TransactionNavList extends Transactions {
     }
     render() {
         return (
-            !this.props.mobile ? null : null
+            !this.props.mobile ? this.renderList() : null
         );
     }
 }

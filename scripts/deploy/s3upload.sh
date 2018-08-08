@@ -13,12 +13,12 @@ printMsg() {
 
 s3UploadDeployment() {
     printMsg "uploading to $S3_FULL_PATH"
-    aws s3 cp --recursive "$BUILD_DIR" "$S3_FULL_PATH/" --acl public-read
+    aws --profile bf s3 cp --recursive "$BUILD_DIR" "$S3_FULL_PATH/" --acl public-read
 }
 
 invalidateCache() {
     printMsg "invalidating website cache"
-    aws cloudfront create-invalidation --distribution-id $CDN_DISTRIBUTION_ID --paths "/*"
+    aws --profile bf cloudfront create-invalidation --distribution-id $CDN_DISTRIBUTION_ID --paths "/*"
 }
 
 s3UploadDeployment

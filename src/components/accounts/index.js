@@ -299,7 +299,7 @@ export class AccountNavMenuItem extends Component {
             content = <span>
                         {name}
                         <p style={{wordWrap: 'break-word'}}>Public Key: {account.publicKey}</p>
-                        <p style={{wordWrap: 'break-word'}}>Private Key: {this.props.accountStore.current.account.signer._privateKey.asHex()}</p>
+                        <p style={{wordWrap: 'break-word'}}>Private Key: {account.privateKey}</p>
                     </span>
         } 
         else {

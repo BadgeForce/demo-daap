@@ -88,10 +88,10 @@ export class IssueForm extends Component {
         this.initialState = {
             value: 'issue', 
             recipient: '', 
-            dateEarned: null, 
+            dateEarned: moment(), 
             name: '', 
             image: null, 
-            expiration: null, 
+            expiration: moment().add('d'), 
             formErrors: [], 
             formError: false, 
             loading: false,
@@ -303,7 +303,7 @@ export class IssueForm extends Component {
         let text, content; 
         text = this.state.issueSuccess.transaction.metaData.description.substr(0, 25)
         content = <span>
-                    <p style={{wordWrap: 'break-word'}}>{this.state.issueSuccess.transaction.metaData.description}</p>
+                    <p style={{wordWrap: 'break-word' ,}}>{this.state.issueSuccess.transaction.metaData.description}</p>
                 </span>
         return (
             <TextTruncate
@@ -320,6 +320,7 @@ export class IssueForm extends Component {
             />
         );
     }
+
     getSuccessMessage() {
         return (
             <span>
@@ -328,7 +329,6 @@ export class IssueForm extends Component {
                     header={'Success'} 
                     content={this.getSuccessInfo()}
                 />
-                <Popup content={this.state.issueSuccess.transaction.metaData.description} trigger={<a id={'success_info_popup'} />} hideOnScroll on='click' position='bottom left' />
             </span>
         );
     }

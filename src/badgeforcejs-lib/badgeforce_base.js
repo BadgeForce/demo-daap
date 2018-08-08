@@ -35,7 +35,7 @@ export class RestClient {
             const opts = {times: 3};
             const method = async (callback) => {
                 try {
-                    const response = await window.fetch(new Request(uri, {method: 'GET', headers: {'Access-Control-Allow-Origin':'*', 'Content-Type': 'application/json', 'resource':'ipfs', 'IPFS-HASH': hash}}));
+                    const response = await window.fetch(new Request(uri, {method: 'GET', headers: {'Content-Type': 'application/json', 'resource':'ipfs', 'IPFS-HASH': hash}}));
                     response.status > 300 ? callback(new Error(response.statusText)): callback(null, response) ;
                 } catch (error) {
                     callback(error)
@@ -55,7 +55,7 @@ export class RestClient {
             const opts = {times: 0};
             const method = async (callback) => {
                 try {
-                    const response = await window.fetch(new Request(uri, {method: 'GET', headers: {'Access-Control-Allow-Origin':'*', 'Content-Type': 'application/json', 'resource': 'state'}}));
+                    const response = await window.fetch(new Request(uri, {method: 'GET', headers: {'Content-Type': 'application/json', 'resource': 'state'}}));
                     response.status > 300 ? callback(new Error(response.statusText)): callback(null, response) ;
                 } catch (error) {
                     callback(error)

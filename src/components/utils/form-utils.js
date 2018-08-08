@@ -27,3 +27,9 @@ export const showErrorMessage = (title, error) => {
         <Message error header={title} content={error.message} />
     );
 }
+
+export const successMessage = (title, message) => {
+    return (
+        <Message success header={title} content={message} />
+    );
+}

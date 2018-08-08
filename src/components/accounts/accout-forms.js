@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Form, Grid, Menu, Button, Message } from 'semantic-ui-react'
-import { isValidForm, showFormErrors } from '../utils/form-utils';
+import { isValidForm, showFormErrors, successMessage } from '../utils/form-utils';
 import { styles } from '../common-styles';
 import { AccountNavMenuItem } from './index';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -9,7 +9,7 @@ import { AccountManager } from '../../badgeforcejs-lib/account_manager';
 export class NewAccountForm extends Component {
     constructor(props) {
         super(props);
-        this.state = {password: '', name: '', formErrors: [], formError: false, loading: false};
+        this.state = {password: '', name: '', success: false, formErrors: [], formError: false, loading: false};
         this.createAccount = this.createAccount.bind(this);
     }
 
@@ -24,7 +24,7 @@ export class NewAccountForm extends Component {
         if(validationResult.valid) {
             try {
                 await this.props.handleCreateAccount(this.state.password, this.state.name);
-                this.setState({loading: false, password: '', name: '', formErrors: [], formError: false});
+                this.setState({loading: false, password: '', name: '', success: true, formErrors: [], formError: false});
             } catch (error) {
                 this.setState(previousState => {
                     const {loading, formErrors, formError, ...state} = previousState;
@@ -44,8 +44,8 @@ export class NewAccountForm extends Component {
     render(){
         return (
             <Form loading={this.state.loading} size='large' style={{paddingTop: 25}} value={this.state.name} error={this.state.formError ? true : undefined}>
-                <Form.Field error={this.state.formError ? true : undefined} value={this.state.name} >
-                    <input style={styles.inputField} placeholder='Name for account' onChange={(e) => this.setState({name: e.target.value})}/>
+                <Form.Field error={this.state.formError ? true : undefined}  value={this.state.name} >
+                    <input style={styles.inputField} placeholder='Name for account' value={this.state.name} onChange={(e) => this.setState({name: e.target.value})}/>
                 </Form.Field>
                 <Form.Field error={this.state.formError ? true : undefined} value={this.state.password}>
                     <input style={styles.inputField} type='password' value={this.state.password} placeholder='Very strong password'  onChange={(e, password) => this.setState({password: e.target.value})} />
@@ -55,6 +55,7 @@ export class NewAccountForm extends Component {
                         onClick={this.createAccount.bind(this)} size='large' content='Create Account' icon='key' labelPosition='right'/>
                 </Form.Group>
                 {this.state.formErrors.length > 0 ? showFormErrors(this.state.formErrors) : null}
+                {this.state.succes ? <Message header='Account created successfully' content='You can now issue badges, and view the ones you own. Use the navigation buttons at the top to get going!' success />: null}
             </Form>
         )
     }
